@@ -1,6 +1,8 @@
 import logging
 from flask import Flask, request, jsonify
 from pymongo import MongoClient
+from datetime import datetime
+import io
 
 # Configure logging
 logging.basicConfig(
@@ -19,8 +21,9 @@ app = Flask(__name__)
 # Set up MongoDB connection (assuming local MongoDB instance)
 try:
     client = MongoClient('mongodb://localhost:27017/')
-    db = client['apiculture']
-    collection = db['sensor_readings']
+    db = client['apiculture']  # Updated database name
+    sensor_collection = db['sensor_readings']
+    image_collection = db['images']
     # Test MongoDB connection
     client.server_info()
     logger.info("Successfully connected to MongoDB")
@@ -49,12 +52,59 @@ def receive_sensor_data():
 
     try:
         # Insert the data into MongoDB
-        result = collection.insert_one(data)
-        logger.info(f"Successfully saved data with ID: {result.inserted_id}")
+        result = sensor_collection.insert_one(data)
+        logger.info(f"Successfully saved sensor data with ID: {result.inserted_id}")
         return jsonify({'message': 'Data saved successfully', 'inserted_id': str(result.inserted_id)}), 201
     except Exception as e:
-        logger.error(f"Failed to save data: {str(e)}")
+        logger.error(f"Failed to save sensor data: {str(e)}")
         return jsonify({'error': f'Failed to save data: {str(e)}'}), 500
+
+
+@app.route('/api/images', methods=['POST'])
+def upload_image():
+    """
+    Endpoint to receive an image file via POST request.
+    Expects a multipart/form-data request with an 'image' file.
+    Stores the image as binary data in the MongoDB 'images' collection.
+    """
+    logger.info(f"Received POST request to /api/upload-image from {request.remote_addr}")
+
+    if 'image' not in request.files:
+        logger.warning("No image file provided in request")
+        return jsonify({'error': 'No image file provided'}), 400
+
+    image_file = request.files['image']
+    if not image_file or image_file.filename == '':
+        logger.warning("Empty or invalid image file")
+        return jsonify({'error': 'Invalid image file'}), 400
+
+    # Validate file type (allow common image formats)
+    allowed_extensions = {'png', 'jpg', 'jpeg', 'gif'}
+    if not '.' in image_file.filename or image_file.filename.rsplit('.', 1)[1].lower() not in allowed_extensions:
+        logger.warning(f"Unsupported file type for {image_file.filename}")
+        return jsonify({'error': 'Unsupported file type. Allowed: png, jpg, jpeg, gif'}), 400
+
+    try:
+        # Read image as binary
+        image_data = image_file.read()
+        # Create document with image data and metadata
+        image_doc = {
+            'filename': image_file.filename,
+            'data': image_data,
+            'content_type': image_file.content_type,
+            'upload_time': datetime.utcnow()
+        }
+        # Insert into MongoDB
+        result = image_collection.insert_one(image_doc)
+        logger.info(f"Successfully saved image {image_file.filename} with ID: {result.inserted_id}")
+        return jsonify({
+            'message': 'Image uploaded successfully',
+            'inserted_id': str(result.inserted_id),
+            'filename': image_file.filename
+        }), 201
+    except Exception as e:
+        logger.error(f"Failed to save image: {str(e)}")
+        return jsonify({'error': f'Failed to save image: {str(e)}'}), 500
 
 
 if __name__ == '__main__':
