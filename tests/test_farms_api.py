@@ -20,6 +20,18 @@ class TestFarmsApi(unittest.TestCase):
                     'name': 'Ising Farm',
                     'description': 'Main production farm with advanced monitoring systems',
                     'address': 'Calangcawan Sur, Vinzons, Camarines Norte'
+                },
+                {
+                    'farm_id': 2,
+                    'name': 'Alveare Farm',
+                    'description': 'Organic certified farm specializing in quality honey production',
+                    'address': 'Calangcawan Sur, Vinzons, Camarines Norte'
+                },
+                {
+                    'farm_id': 3,
+                    'name': 'BoJayHan Farm',
+                    'description': 'Research and development apiary with experimental hives',
+                    'address': 'Iberica, Labo, Camarines Norte'
                 }
             ]),
             content_type='application/json'
