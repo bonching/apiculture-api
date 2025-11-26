@@ -1,9 +1,8 @@
-import logging
 from flask import Flask, request, jsonify
 from datetime import datetime
-from apiculture_api.mongo_client import ApicultureMongoClient
+from apiculture_api.farms_api import farms_api
 
-# Configure logging
+import logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
@@ -17,9 +16,12 @@ logger.setLevel(logging.INFO)
 
 # Create the Flask application
 app = Flask(__name__)
+app.register_blueprint(farms_api)
 
-# Set up MongoDB connection (assuming local MongoDB instance)
+# Set up MongoDB connection
+from apiculture_api.mongo_client import ApicultureMongoClient
 mongo = ApicultureMongoClient()
+
 
 @app.route('/api/sensor-data', methods=['POST'])
 def receive_sensor_data():
