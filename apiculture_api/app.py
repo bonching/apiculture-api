@@ -1,8 +1,7 @@
 import logging
 from flask import Flask, request, jsonify
-from pymongo import MongoClient
 from datetime import datetime
-import io
+from apiculture_api.mongo_client import ApicultureMongoClient
 
 # Configure logging
 logging.basicConfig(
@@ -13,24 +12,14 @@ logging.basicConfig(
         logging.StreamHandler()
     ]
 )
-logger = logging.getLogger(__name__)
+logger = logging.getLogger('app')
+logger.setLevel(logging.INFO)
 
 # Create the Flask application
 app = Flask(__name__)
 
 # Set up MongoDB connection (assuming local MongoDB instance)
-try:
-    client = MongoClient('mongodb://localhost:27017/')
-    db = client['apiculture']  # Updated database name
-    sensor_collection = db['sensor_readings']
-    image_collection = db['images']
-    # Test MongoDB connection
-    client.server_info()
-    logger.info("Successfully connected to MongoDB")
-except Exception as e:
-    logger.error(f"Failed to connect to MongoDB: {e}")
-    exit(1)
-
+mongo = ApicultureMongoClient()
 
 @app.route('/api/sensor-data', methods=['POST'])
 def receive_sensor_data():
@@ -52,7 +41,7 @@ def receive_sensor_data():
 
     try:
         # Insert the data into MongoDB
-        result = sensor_collection.insert_one(data)
+        result = mongo.sensor_collection.insert_one(data)
         logger.info(f"Successfully saved sensor data with ID: {result.inserted_id}")
         return jsonify({'message': 'Data saved successfully', 'inserted_id': str(result.inserted_id)}), 201
     except Exception as e:
@@ -95,7 +84,7 @@ def upload_image():
             'upload_time': datetime.utcnow()
         }
         # Insert into MongoDB
-        result = image_collection.insert_one(image_doc)
+        result = mongo.image_collection.insert_one(image_doc)
         logger.info(f"Successfully saved image {image_file.filename} with ID: {result.inserted_id}")
         return jsonify({
             'message': 'Image uploaded successfully',
