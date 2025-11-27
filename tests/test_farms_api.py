@@ -56,5 +56,13 @@ class TestFarmsApi(unittest.TestCase):
         self.assertEqual(data['message'], 'Farm updated successfully')
         self.assertIn('id', data)
 
+    def test_get_farms(self):
+        response = self.app.get('/api/farms')
+        data = json.loads(response.data)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('farms', data)
+        self.assertEqual(len(data['farms']), 3)
+
 if __name__ == '__main__':
     unittest.main()

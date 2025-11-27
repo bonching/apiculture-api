@@ -1,6 +1,9 @@
 from datetime import datetime
 from bson import ObjectId
 
+from apiculture_api.app_util import AppUtil
+util = AppUtil()
+
 from flask import request, jsonify, Blueprint
 farms_api = Blueprint("farms_api", __name__)
 
@@ -65,3 +68,13 @@ def update_farm(id):
     except Exception as e:
         logger.error(f"Failed to update farm: {str(e)}")
         return jsonify({'error': f'Failed to update farm: {str(e)}'}), 500
+
+@farms_api.route('/api/farms', methods=['GET'])
+def get_farms():
+    try:
+        farms = list(mongo.farms_collection.find())
+        logger.info(f'farms: {farms}')
+        return jsonify({'farms': util.convert_objectids(farms)}), 200
+    except Exception as e:
+        logger.error(f"Failed to get farms: {str(e)}")
+        return jsonify({'error': f'Failed to get farms: {str(e)}'}), 500
