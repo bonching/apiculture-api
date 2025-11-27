@@ -16,22 +16,22 @@ class TestFarmsApi(unittest.TestCase):
             '/api/farms',
             data=json.dumps([
                 {
-                    'farm_id': 1,
                     'name': 'Ising Farm',
                     'description': 'Main production farm with advanced monitoring systems',
-                    'address': 'Calangcawan Sur, Vinzons, Camarines Norte'
+                    'address': 'Calangcawan Sur, Vinzons, Camarines Norte',
+                    'created_at': datetime.utcnow().isoformat(timespec='milliseconds')
                 },
                 {
-                    'farm_id': 2,
                     'name': 'Alveare Farm',
                     'description': 'Organic certified farm specializing in quality honey production',
-                    'address': 'Calangcawan Sur, Vinzons, Camarines Norte'
+                    'address': 'Calangcawan Sur, Vinzons, Camarines Norte',
+                    'created_at': datetime.utcnow().isoformat(timespec='milliseconds')
                 },
                 {
-                    'farm_id': 3,
                     'name': 'BoJayHan Farm',
                     'description': 'Research and development apiary with experimental hives',
-                    'address': 'Iberica, Labo, Camarines Norte'
+                    'address': 'Iberica, Labo, Camarines Norte',
+                    'created_at': datetime.utcnow().isoformat(timespec='milliseconds')
                 }
             ]),
             content_type='application/json'
@@ -41,14 +41,20 @@ class TestFarmsApi(unittest.TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertIn('message', data)
         self.assertEqual(data['message'], 'Data saved successfully')
-        self.assertIn('inserted_id', data)
+        self.assertIn('inserted_ids', data)
 
+    def test_update_farm(self):
+        response = self.app.put(
+            '/api/farms/6927b669aff0f0ee8358c04c',
+            data=json.dumps({'description': 'Main production farm with advanced monitoring systems'}),
+            content_type='application/json'
+        )
+        data = json.loads(response.data)
 
-    def _generate_random_temperature(self):
-        return {
-            'temperature': 25.5,
-            'timestamp': datetime.utcnow().isoformat(timespec='milliseconds'),
-        }
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('message', data)
+        self.assertEqual(data['message'], 'Farm updated successfully')
+        self.assertIn('id', data)
 
 if __name__ == '__main__':
     unittest.main()

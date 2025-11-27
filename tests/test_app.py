@@ -1,4 +1,6 @@
 import unittest
+from datetime import datetime
+
 from apiculture_api.app import app
 import json
 
@@ -58,6 +60,12 @@ class TestApicultureApi(unittest.TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn('error', data)
         self.assertEqual(data['error'], 'No data provided')
+
+    def _generate_random_temperature(self):
+        return {
+            'temperature': 25.5,
+            'timestamp': datetime.utcnow().isoformat(timespec='milliseconds'),
+        }
 
 
 if __name__ == '__main__':

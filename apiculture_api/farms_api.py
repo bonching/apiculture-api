@@ -1,3 +1,6 @@
+from datetime import datetime
+from bson import ObjectId
+
 from flask import request, jsonify, Blueprint
 farms_api = Blueprint("farms_api", __name__)
 
@@ -29,8 +32,36 @@ def save_farms():
 
     try:
         result = mongo.farms_collection.insert_many(data)
-        logger.info(f"Successfully saved farms with ID: {result.inserted_ids}")
-        return jsonify({'message': 'Data saved successfully', 'inserted_id': str(result.inserted_ids)}), 201
+        logger.info(f"Successfully saved farms with IDs: {result.inserted_ids}")
+        return jsonify({'message': 'Data saved successfully', 'inserted_ids': str(result.inserted_ids)}), 201
     except Exception as e:
         logger.error(f"Failed to save farms: {str(e)}")
         return jsonify({'error': f'Failed to save data: {str(e)}'}), 500
+
+@farms_api.route('/api/farms/<id>', methods=['PUT'])
+def update_farm(id):
+    if not request.is_json:
+        logger.warning("Request does not contain JSON data")
+        return jsonify({'error': 'Request must be JSON'}), 400
+
+    data = request.json
+    if not data:
+        logger.warning("No data provided in JSON body")
+        return jsonify({'error': 'No data provided'}), 400
+
+    try:
+        farm = mongo.farms_collection.find_one({"_id": ObjectId(id)})
+
+        for key, value in data.items():
+            farm[str(key)] = value
+        farm['updated_at'] = datetime.utcnow().isoformat(timespec='milliseconds')
+
+        logger.info(f"farm: {str(farm)}")
+
+        mongo.farms_collection.update_one({"_id": ObjectId(id)}, {'$set': farm}, upsert=False)
+
+        logger.info(f"Successfully updated farm with ID: {id}")
+        return jsonify({'message': 'Farm updated successfully', 'id': str(id)}), 201
+    except Exception as e:
+        logger.error(f"Failed to update farm: {str(e)}")
+        return jsonify({'error': f'Failed to update farm: {str(e)}'}), 500
