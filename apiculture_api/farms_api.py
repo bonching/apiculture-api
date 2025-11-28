@@ -73,8 +73,8 @@ def update_farm(id):
 def get_farms():
     try:
         farms = list(mongo.farms_collection.find())
-        logger.info(f'farms: {farms}')
-        return jsonify({'farms': util.convert_objectids(farms)}), 200
+        logger.info(f'data: {farms}')
+        return jsonify({'data': util.convert_objectids(farms)}), 200
     except Exception as e:
         logger.error(f"Failed to get farms: {str(e)}")
         return jsonify({'error': f'Failed to get farms: {str(e)}'}), 500
