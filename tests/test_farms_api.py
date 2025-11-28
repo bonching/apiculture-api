@@ -19,18 +19,21 @@ class TestFarmsApi(unittest.TestCase):
                     'name': 'Ising Farm',
                     'description': 'Main production farm with advanced monitoring systems',
                     'address': 'Calangcawan Sur, Vinzons, Camarines Norte',
+                    'beehiveIds': [],
                     'created_at': datetime.utcnow().isoformat(timespec='milliseconds')
                 },
                 {
                     'name': 'Alveare Farm',
                     'description': 'Organic certified farm specializing in quality honey production',
                     'address': 'Calangcawan Sur, Vinzons, Camarines Norte',
+                    'beehiveIds': [],
                     'created_at': datetime.utcnow().isoformat(timespec='milliseconds')
                 },
                 {
                     'name': 'BoJayHan Farm',
                     'description': 'Research and development apiary with experimental hives',
                     'address': 'Iberica, Labo, Camarines Norte',
+                    'beehiveIds': [],
                     'created_at': datetime.utcnow().isoformat(timespec='milliseconds')
                 }
             ]),
@@ -61,8 +64,8 @@ class TestFarmsApi(unittest.TestCase):
         data = json.loads(response.data)
 
         self.assertEqual(response.status_code, 200)
-        self.assertIn('farms', data)
-        self.assertEqual(len(data['farms']), 3)
+        self.assertIn('data', data)
+        self.assertEqual(len(data['data']), 3)
 
 if __name__ == '__main__':
     unittest.main()
