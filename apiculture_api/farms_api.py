@@ -36,7 +36,7 @@ def save_farms():
     try:
         result = mongo.farms_collection.insert_many(data)
         logger.info(f"Successfully saved farms with IDs: {result.inserted_ids}")
-        return jsonify({'message': 'Data saved successfully', 'inserted_ids': str(result.inserted_ids)}), 201
+        return jsonify({'message': 'Data saved successfully', 'data': util.convert_objectids(result.inserted_ids)}), 201
     except Exception as e:
         logger.error(f"Failed to save farms: {str(e)}")
         return jsonify({'error': f'Failed to save data: {str(e)}'}), 500
