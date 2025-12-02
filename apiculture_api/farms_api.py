@@ -34,9 +34,9 @@ def save_farms():
         return jsonify({'error': 'No data provided'}), 400
 
     try:
-        result = mongo.farms_collection.insert_many(data)
+        result = mongo.farms_collection.insert_many(util.remove_id_key(data))
         logger.info(f"Successfully saved farms with IDs: {result.inserted_ids}")
-        return jsonify({'message': 'Data saved successfully', 'data': util.convert_objectids(result.inserted_ids)}), 201
+        return jsonify({'message': 'Data saved successfully', 'data': util.objectid_to_str(result.inserted_ids)}), 201
     except Exception as e:
         logger.error(f"Failed to save farms: {str(e)}")
         return jsonify({'error': f'Failed to save data: {str(e)}'}), 500
@@ -58,13 +58,14 @@ def update_farm(id):
         for key, value in data.items():
             farm[str(key)] = value
         farm['updated_at'] = datetime.utcnow().isoformat(timespec='milliseconds')
+        farm = util.remove_id_key(farm)
 
         logger.info(f"farm: {str(farm)}")
 
         mongo.farms_collection.update_one({"_id": ObjectId(id)}, {'$set': farm}, upsert=False)
 
         logger.info(f"Successfully updated farm with ID: {id}")
-        return jsonify({'message': 'Farm updated successfully', 'id': str(id)}), 201
+        return jsonify({'message': 'Farm updated successfully', 'data': str(id)}), 201
     except Exception as e:
         logger.error(f"Failed to update farm: {str(e)}")
         return jsonify({'error': f'Failed to update farm: {str(e)}'}), 500
@@ -73,8 +74,8 @@ def update_farm(id):
 def get_farms():
     try:
         farms = list(mongo.farms_collection.find())
-        logger.info(f'data: {farms}')
-        return jsonify({'data': util.convert_objectids(farms)}), 200
+        logger.info(f'data: {util.objectid_to_str(farms)}')
+        return jsonify({'data': util.objectid_to_str(farms)}), 200
     except Exception as e:
         logger.error(f"Failed to get farms: {str(e)}")
         return jsonify({'error': f'Failed to get farms: {str(e)}'}), 500
