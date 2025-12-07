@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from datetime import datetime
 from apiculture_api.farms_api import farms_api
+from apiculture_api.hives_api import hives_api
 
 import logging
 logging.basicConfig(
@@ -18,6 +19,7 @@ logger.setLevel(logging.INFO)
 # Create the Flask application
 app = Flask(__name__)
 app.register_blueprint(farms_api)
+app.register_blueprint(hives_api)
 
 CORS(
     app,

@@ -44,7 +44,7 @@ class TestFarmsApi(unittest.TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertIn('message', data)
         self.assertEqual(data['message'], 'Data saved successfully')
-        self.assertIn('inserted_ids', data)
+        self.assertIn('data', data)
 
     def test_update_farm(self):
         response = self.app.put(
@@ -57,7 +57,7 @@ class TestFarmsApi(unittest.TestCase):
         self.assertEqual(response.status_code, 201)
         self.assertIn('message', data)
         self.assertEqual(data['message'], 'Farm updated successfully')
-        self.assertIn('id', data)
+        self.assertIn('data', data)
 
     def test_get_farms(self):
         response = self.app.get('/api/farms')

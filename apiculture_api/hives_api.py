@@ -1,0 +1,81 @@
+from datetime import datetime
+from bson import ObjectId
+
+from apiculture_api.app_util import AppUtil
+util = AppUtil()
+
+from flask import request, jsonify, Blueprint
+hives_api = Blueprint("hives_api", __name__)
+
+from apiculture_api.mongo_client import ApicultureMongoClient
+mongo = ApicultureMongoClient()
+
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.FileHandler('apiculture-api.log'),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger('hives_api')
+logger.setLevel(logging.INFO)
+
+@hives_api.route('/api/hives', methods=['POST'])
+def save_hives():
+    if not request.is_json:
+        logger.warning("Request does not contain JSON data")
+        return jsonify({'error': 'Request must be JSON'}), 400
+
+    data = request.json
+    if not data:
+        logger.warning("No data provided in JSON body")
+        return jsonify({'error': 'No data provided'}), 400
+
+    try:
+        result = mongo.hives_collection.insert_many(util.remove_id_key(data))
+        logger.info(f"Successfully saved hives with IDs: {result.inserted_ids}")
+        return jsonify({'message': 'Data saved successfully', 'data': util.objectid_to_str(result.inserted_ids)}), 201
+    except Exception as e:
+        logger.error(f"Failed to save hives: {str(e)}")
+        return jsonify({'error': f'Failed to save data: {str(e)}'}), 500
+
+@hives_api.route('/api/hives/<id>', methods=['PUT'])
+def update_hive(id):
+    if not request.is_json:
+        logger.warning("Request does not contain JSON data")
+        return jsonify({'error': 'Request must be JSON'}), 400
+
+    data = request.json
+    if not data:
+        logger.warning("No data provided in JSON body")
+        return jsonify({'error': 'No data provided'}), 400
+
+    try:
+        hive = mongo.hives_collection.find_one({"_id": ObjectId(id)})
+
+        for key, value in data.items():
+            hive[str(key)] = value
+        hive['updated_at'] = datetime.utcnow().isoformat(timespec='milliseconds')
+        hive = util.remove_id_key(hive)
+
+        logger.info(f"hive: {str(hive)}")
+
+        mongo.hives_collection.update_one({"_id": ObjectId(id)}, {'$set': hive}, upsert=False)
+
+        logger.info(f"Successfully updated hive with ID: {id}")
+        return jsonify({'message': 'Hive updated successfully', 'data': str(id)}), 201
+    except Exception as e:
+        logger.error(f"Failed to update hive: {str(e)}")
+        return jsonify({'error': f'Failed to update hive: {str(e)}'}), 500
+
+@hives_api.route('/api/hives', methods=['GET'])
+def get_hives():
+    try:
+        hives = list(mongo.hives_collection.find())
+        logger.info(f'data: {util.objectid_to_str(hives)}')
+        return jsonify({'data': util.objectid_to_str(hives)}), 200
+    except Exception as e:
+        logger.error(f"Failed to get hives: {str(e)}")
+        return jsonify({'error': f'Failed to get hives: {str(e)}'}), 500
