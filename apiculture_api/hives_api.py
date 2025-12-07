@@ -29,14 +29,24 @@ def save_hives():
         return jsonify({'error': 'Request must be JSON'}), 400
 
     data = request.json
+    logger.info(f"data: {data}")
     if not data:
         logger.warning("No data provided in JSON body")
         return jsonify({'error': 'No data provided'}), 400
 
     try:
         result = mongo.hives_collection.insert_many(util.remove_id_key(data))
+        inserted_ids = util.objectid_to_str(result.inserted_ids)
         logger.info(f"Successfully saved hives with IDs: {result.inserted_ids}")
-        return jsonify({'message': 'Data saved successfully', 'data': util.objectid_to_str(result.inserted_ids)}), 201
+
+        farm_id = ObjectId(data[0]['farmId'])
+        farm = mongo.farms_collection.find_one({"_id": ObjectId(farm_id)})
+        for inserted_id in inserted_ids:
+            farm['beehiveIds'].append(inserted_id)
+        farm['updated_at'] = datetime.utcnow().isoformat(timespec='milliseconds')
+        mongo.farms_collection.update_one({"_id": ObjectId(farm_id)}, {'$set': farm}, upsert=False)
+
+        return jsonify({'message': 'Data saved successfully', 'data': inserted_ids}), 201
     except Exception as e:
         logger.error(f"Failed to save hives: {str(e)}")
         return jsonify({'error': f'Failed to save data: {str(e)}'}), 500
