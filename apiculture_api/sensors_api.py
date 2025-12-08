@@ -40,11 +40,12 @@ def save_sensors():
         logger.info(f"Successfully saved sensors with IDs: {result.inserted_ids}")
 
         beehive_id = data[0]['beehiveId']
-        beehive = mongo.hives_collection.find_one({"_id": ObjectId(beehive_id)})
-        for inserted_id in inserted_ids:
-            beehive['sensorIds'].append(inserted_id)
-        beehive['updated_at'] = datetime.utcnow().isoformat(timespec='milliseconds')
-        mongo.hives_collection.update_one({"_id": ObjectId(beehive_id)}, {'$set': beehive}, upsert=False)
+        if beehive_id:
+            beehive = mongo.hives_collection.find_one({"_id": ObjectId(beehive_id)})
+            for inserted_id in inserted_ids:
+                beehive['sensorIds'].append(inserted_id)
+            beehive['updated_at'] = datetime.utcnow().isoformat(timespec='milliseconds')
+            mongo.hives_collection.update_one({"_id": ObjectId(beehive_id)}, {'$set': beehive}, upsert=False)
 
         return jsonify({'message': 'Data saved successfully', 'data': inserted_ids}), 201
     except Exception as e:
