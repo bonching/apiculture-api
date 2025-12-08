@@ -3,6 +3,7 @@ from flask_cors import CORS
 from datetime import datetime
 from apiculture_api.farms_api import farms_api
 from apiculture_api.hives_api import hives_api
+from apiculture_api.sensors_api import sensors_api
 
 import logging
 logging.basicConfig(
@@ -20,6 +21,7 @@ logger.setLevel(logging.INFO)
 app = Flask(__name__)
 app.register_blueprint(farms_api)
 app.register_blueprint(hives_api)
+app.register_blueprint(sensors_api)
 
 CORS(
     app,

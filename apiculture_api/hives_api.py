@@ -39,7 +39,7 @@ def save_hives():
         inserted_ids = util.objectid_to_str(result.inserted_ids)
         logger.info(f"Successfully saved hives with IDs: {result.inserted_ids}")
 
-        farm_id = ObjectId(data[0]['farmId'])
+        farm_id = data[0]['farmId']
         farm = mongo.farms_collection.find_one({"_id": ObjectId(farm_id)})
         for inserted_id in inserted_ids:
             farm['beehiveIds'].append(inserted_id)

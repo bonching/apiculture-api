@@ -19,7 +19,7 @@ class ApicultureMongoClient():
             self.db = self.client['apiculture']  # Updated database name
             self.farms_collection = self.db['farms']
             self.hives_collection = self.db['hives']
-            self.sensor_collection = self.db['sensor_readings']
+            self.sensors_collection = self.db['sensors']
             self.image_collection = self.db['images']
 
             self.client.server_info()
