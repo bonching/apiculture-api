@@ -34,7 +34,7 @@ def save_farms():
         return jsonify({'error': 'No data provided'}), 400
 
     try:
-        result = mongo.farms_collection.insert_many(util.remove_id_key(data))
+        result = mongo.farms_collection.insert_many(util.camel_to_snake_key(util.remove_id_key(data)))
         logger.info(f"Successfully saved farms with IDs: {result.inserted_ids}")
         return jsonify({'message': 'Data saved successfully', 'data': util.objectid_to_str(result.inserted_ids)}), 201
     except Exception as e:
@@ -62,7 +62,7 @@ def update_farm(id):
 
         logger.info(f"farm: {str(farm)}")
 
-        mongo.farms_collection.update_one({"_id": ObjectId(id)}, {'$set': farm}, upsert=False)
+        mongo.farms_collection.update_one({"_id": ObjectId(id)}, {'$set': util.camel_to_snake_key(farm)}, upsert=False)
 
         logger.info(f"Successfully updated farm with ID: {id}")
         return jsonify({'message': 'Farm updated successfully', 'data': str(id)}), 201
@@ -73,9 +73,9 @@ def update_farm(id):
 @farms_api.route('/api/farms', methods=['GET'])
 def get_farms():
     try:
-        farms = list(mongo.farms_collection.find())
-        logger.info(f'data: {util.objectid_to_str(farms)}')
-        return jsonify({'data': util.objectid_to_str(farms)}), 200
+        farms = util.snake_to_camel_key(util.objectid_to_str(list(mongo.farms_collection.find())))
+        logger.info(f'data: {farms}')
+        return jsonify({'data': farms}), 200
     except Exception as e:
         logger.error(f"Failed to get farms: {str(e)}")
         return jsonify({'error': f'Failed to get farms: {str(e)}'}), 500

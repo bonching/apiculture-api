@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 
 from bson import ObjectId
@@ -67,3 +68,68 @@ class AppUtil:
         elif isinstance(obj, list):
             return [self.fix_datetime(item) for item in obj]
         return obj
+
+    def camel_to_snake_key(self, obj, convert_values=False):
+        """
+        Recursively converts CamelCase keys to snake_case in dictionaries and nested structures.
+
+        Args:
+            obj: The input object (dict, list, or primitive).
+            convert_values (bool): If True, also convert string values that are keys (e.g., in lists of dicts).
+
+        Returns:
+            The modified object with converted keys.
+        """
+        if isinstance(obj, dict):
+            new_obj = {}
+            for key, value in obj.items():
+                # Convert key
+                snake_key = self.camel_to_snake(key)
+                # Recurse on value
+                new_value = self.camel_to_snake_key(value, convert_values) if convert_values or isinstance(value, (dict,
+                                                                                                              list)) else value
+                new_obj[snake_key] = new_value
+            return new_obj
+        elif isinstance(obj, list):
+            return [self.camel_to_snake_key(item, convert_values) for item in obj]
+        elif convert_values and isinstance(obj, str):
+            # Optional: Convert string values if flagged (e.g., for key-like strings in lists)
+            return self.camel_to_snake(obj)
+        return obj
+
+    def snake_to_camel_key(self, obj, convert_values=False):
+        """
+        Recursively converts snake_case keys to CamelCase in dictionaries and nested structures.
+
+        Args:
+            obj: The input object (dict, list, or primitive).
+            convert_values (bool): If True, also convert string values that are keys.
+
+        Returns:
+            The modified object with converted keys.
+        """
+        if isinstance(obj, dict):
+            new_obj = {}
+            for key, value in obj.items():
+                # Convert key
+                camel_key = self.snake_to_camel(key)
+                # Recurse on value
+                new_value = self.snake_to_camel_key(value, convert_values) if convert_values or isinstance(value, (dict,
+                                                                                                              list)) else value
+                new_obj[camel_key] = new_value
+            return new_obj
+        elif isinstance(obj, list):
+            return [self.snake_to_camel_key(item, convert_values) for item in obj]
+        elif convert_values and isinstance(obj, str):
+            # Optional: Convert string values if flagged
+            return self.snake_to_camel(obj)
+        return obj
+
+    # Reusing the helper functions from before
+    def camel_to_snake(self, name):
+        s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
+        return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+
+    def snake_to_camel(self, name):
+        components = name.split('_')
+        return components[0] + ''.join(x.capitalize() for x in components[1:])

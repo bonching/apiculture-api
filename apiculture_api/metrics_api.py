@@ -32,7 +32,7 @@ def save_metrics():
         return jsonify({'error': 'No data provided'}), 400
 
     try:
-        result = mongo.metrics_collection.insert_many(util.fix_datetime(util.remove_id_key(data)))
+        result = mongo.metrics_collection.insert_many(util.camel_to_snake_key(util.fix_datetime(util.remove_id_key(data))))
         inserted_ids = util.objectid_to_str(result.inserted_ids)
         logger.info(f"Successfully saved metrics with IDs: {result.inserted_ids}")
 
@@ -44,9 +44,9 @@ def save_metrics():
 @metrics_api.route('/api/metrics', methods=['GET'])
 def get_metrics():
     try:
-        metrics = list(mongo.metrics_collection.find())
-        logger.info(f'data: {util.objectid_to_str(metrics)}')
-        return jsonify({'data': util.objectid_to_str(metrics)}), 200
+        metrics = util.snake_to_camel_key(util.objectid_to_str(list(mongo.metrics_collection.find())))
+        logger.info(f'data: {metrics}')
+        return jsonify({'data': metrics}), 200
     except Exception as e:
         logger.error(f"Failed to get metrics: {str(e)}")
         return jsonify({'error': f'Failed to get metrics: {str(e)}'}), 500

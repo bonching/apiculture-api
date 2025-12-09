@@ -35,15 +35,16 @@ def save_hives():
         return jsonify({'error': 'No data provided'}), 400
 
     try:
-        result = mongo.hives_collection.insert_many(util.remove_id_key(data))
+        result = mongo.hives_collection.insert_many(util.camel_to_snake_key(util.remove_id_key(data)))
         inserted_ids = util.objectid_to_str(result.inserted_ids)
         logger.info(f"Successfully saved hives with IDs: {result.inserted_ids}")
 
         farm_id = data[0]['farmId']
         farm = mongo.farms_collection.find_one({"_id": ObjectId(farm_id)})
         for inserted_id in inserted_ids:
-            farm['beehiveIds'].append(inserted_id)
+            farm['beehive_ids'].append(inserted_id)
         farm['updated_at'] = datetime.utcnow().isoformat(timespec='milliseconds')
+        farm = util.camel_to_snake_key(farm)
         mongo.farms_collection.update_one({"_id": ObjectId(farm_id)}, {'$set': farm}, upsert=False)
 
         return jsonify({'message': 'Data saved successfully', 'data': inserted_ids}), 201
@@ -68,7 +69,7 @@ def update_hive(id):
         for key, value in data.items():
             hive[str(key)] = value
         hive['updated_at'] = datetime.utcnow().isoformat(timespec='milliseconds')
-        hive = util.remove_id_key(hive)
+        hive = util.camel_to_snake_key(util.remove_id_key(hive))
 
         logger.info(f"hive: {str(hive)}")
 
@@ -83,9 +84,9 @@ def update_hive(id):
 @hives_api.route('/api/hives', methods=['GET'])
 def get_hives():
     try:
-        hives = list(mongo.hives_collection.find())
-        logger.info(f'data: {util.objectid_to_str(hives)}')
-        return jsonify({'data': util.objectid_to_str(hives)}), 200
+        hives = util.snake_to_camel_key(util.objectid_to_str(list(mongo.hives_collection.find())))
+        logger.info(f'data: {hives}')
+        return jsonify({'data': hives}), 200
     except Exception as e:
         logger.error(f"Failed to get hives: {str(e)}")
         return jsonify({'error': f'Failed to get hives: {str(e)}'}), 500
