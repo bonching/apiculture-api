@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from bson import ObjectId
 from bson.errors import InvalidId
 
@@ -39,3 +41,29 @@ class AppUtil:
         elif isinstance(obj, list):
             return [self.remove_id_key(item) for item in obj]
         return obj  # Primitives unchanged
+
+    def fix_datetime(self, obj):
+        """
+        Recursively processes an object (dict/list) to convert 'datetime' string fields
+        in ISO-like format to proper datetime objects for MongoDB insertion.
+        Assumes UTC; leaves other types unchanged.
+        """
+        if isinstance(obj, dict):
+            new_obj = {}
+            for key, value in obj.items():
+                if key == 'datetime' and isinstance(value, str):
+                    # Parse ISO-like string to datetime (assumes UTC)
+                    try:
+                        # Handle the format 'YYYY-MM-DDTHH:MM:SS.mmm' (no timezone explicit)
+                        parsed_dt = datetime.fromisoformat(
+                            value.replace('Z', '+00:00') if value.endswith('Z') else value)
+                        new_obj[key] = parsed_dt
+                    except ValueError:
+                        # If parsing fails, leave as string (or raise/log as needed)
+                        new_obj[key] = value
+                else:
+                    new_obj[key] = self.fix_datetime(value)
+            return new_obj
+        elif isinstance(obj, list):
+            return [self.fix_datetime(item) for item in obj]
+        return obj

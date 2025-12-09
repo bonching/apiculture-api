@@ -4,6 +4,7 @@ from datetime import datetime
 from apiculture_api.farms_api import farms_api
 from apiculture_api.hives_api import hives_api
 from apiculture_api.sensors_api import sensors_api
+from apiculture_api.metrics_api import metrics_api
 
 import logging
 logging.basicConfig(
@@ -22,6 +23,7 @@ app = Flask(__name__)
 app.register_blueprint(farms_api)
 app.register_blueprint(hives_api)
 app.register_blueprint(sensors_api)
+app.register_blueprint(metrics_api)
 
 CORS(
     app,
