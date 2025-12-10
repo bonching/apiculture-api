@@ -79,3 +79,13 @@ def get_farms():
     except Exception as e:
         logger.error(f"Failed to get farms: {str(e)}")
         return jsonify({'error': f'Failed to get farms: {str(e)}'}), 500
+
+@farms_api.route('/api/farms/<id>', methods=['DELETE'])
+def delete_farm(id):
+    try:
+        mongo.farms_collection.delete_one({"_id": ObjectId(id)})
+        logger.info(f"Successfully deleted farm with ID: {id}")
+        return jsonify({'message': 'Farm deleted successfully', 'data': str(id)}), 201
+    except Exception as e:
+        logger.error(f"Failed to delete farm: {str(e)}")
+        return jsonify({'error': f'Failed to delete farm: {str(e)}'}), 500

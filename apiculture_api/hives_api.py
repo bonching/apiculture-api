@@ -90,3 +90,13 @@ def get_hives():
     except Exception as e:
         logger.error(f"Failed to get hives: {str(e)}")
         return jsonify({'error': f'Failed to get hives: {str(e)}'}), 500
+
+@hives_api.route('/api/hives/<id>', methods=['DELETE'])
+def delete_hive(id):
+    try:
+        mongo.hives_collection.delete_one({"_id": ObjectId(id)})
+        logger.info(f"Successfully deleted hive with ID: {id}")
+        return jsonify({'message': 'Hive deleted successfully', 'data': str(id)}), 201
+    except Exception as e:
+        logger.error(f"Failed to delete hive: {str(e)}")
+        return jsonify({'error': f'Failed to delete hive: {str(e)}'}), 500

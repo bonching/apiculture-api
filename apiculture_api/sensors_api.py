@@ -133,3 +133,13 @@ def get_sensors():
     except Exception as e:
         logger.error(f"Failed to get sensors: {str(e)}")
         return jsonify({'error': f'Failed to get sensors: {str(e)}'}), 500
+
+@sensors_api.route('/api/sensors/<id>', methods=['DELETE'])
+def delete_sensor(id):
+    try:
+        mongo.sensors_collection.delete_one({"_id": ObjectId(id)})
+        logger.info(f"Successfully deleted sensor with ID: {id}")
+        return jsonify({'message': 'Sensor deleted successfully', 'data': str(id)}), 201
+    except Exception as e:
+        logger.error(f"Failed to delete sensor: {str(e)}")
+        return jsonify({'error': f'Failed to delete sensor: {str(e)}'}), 500

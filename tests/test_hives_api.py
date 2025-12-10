@@ -68,5 +68,14 @@ class TestHivesApi(unittest.TestCase):
         self.assertIn('data', data)
         self.assertEqual(len(data['data']), 2)
 
+    def test_delete_hive(self):
+        response = self.app.delete('/api/hives/6937894152d8444820aae298')
+        data = json.loads(response.data)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('message', data)
+        self.assertEqual(data['message'], 'Hive deleted successfully')
+        self.assertIn('data', data)
+
 if __name__ == '__main__':
     unittest.main()

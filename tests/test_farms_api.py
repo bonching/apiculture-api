@@ -67,5 +67,14 @@ class TestFarmsApi(unittest.TestCase):
         self.assertIn('data', data)
         self.assertEqual(len(data['data']), 3)
 
+    def test_delete_farm(self):
+        response = self.app.delete('/api/farms/6937885ce4e485b7a9e2e626')
+        data = json.loads(response.data)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('message', data)
+        self.assertEqual(data['message'], 'Farm deleted successfully')
+        self.assertIn('data', data)
+
 if __name__ == '__main__':
     unittest.main()

@@ -99,5 +99,14 @@ class TestSensorsApi(unittest.TestCase):
         self.assertIn('data', data)
         self.assertEqual(len(data['data']), 2)
 
+    def test_delete_sensor(self):
+        response = self.app.delete('/api/sensors/6938de0b4894fe4e61a531d4')
+        data = json.loads(response.data)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('message', data)
+        self.assertEqual(data['message'], 'Sensor deleted successfully')
+        self.assertIn('data', data)
+
 if __name__ == '__main__':
     unittest.main()
