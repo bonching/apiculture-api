@@ -5,6 +5,7 @@ from apiculture_api.farms_api import farms_api
 from apiculture_api.hives_api import hives_api
 from apiculture_api.sensors_api import sensors_api
 from apiculture_api.metrics_api import metrics_api
+from apiculture_api.alerts_api import alerts_api
 
 import logging
 logging.basicConfig(
@@ -24,6 +25,7 @@ app.register_blueprint(farms_api)
 app.register_blueprint(hives_api)
 app.register_blueprint(sensors_api)
 app.register_blueprint(metrics_api)
+app.register_blueprint(alerts_api)
 
 CORS(
     app,

@@ -22,6 +22,7 @@ class ApicultureMongoClient():
             self.sensors_collection = self.db['sensors']
             self.data_types_collection = self.db['data_types']
             self.metrics_collection = self.db['metrics']
+            self.alerts_collection = self.db['alerts']
             self.image_collection = self.db['images']
 
             self.client.server_info()
