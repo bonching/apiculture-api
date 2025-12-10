@@ -22,6 +22,26 @@ logging.basicConfig(
 logger = logging.getLogger('sensors_api')
 logger.setLevel(logging.INFO)
 
+data_type_units = {
+    'temperature': ' °C',
+    'humidity': '%',
+    'co2': ' ppm',
+    'voc': ' kΩ',
+    'sound': ' dB',
+    'vibration': ' mm/s',
+    'bee_count': '',
+    'lux': ' lux',
+    'uv_index': '',
+    'pheromone': '',
+    'odor_compounds': '',
+    'rainfall': ' mm',
+    'wind_speed': ' km/h',
+    'barometric_pressure': ' hPa',
+    'image': '',
+    'pollen_concentration': '',
+    'activity': ''
+}
+
 @sensors_api.route('/api/sensors', methods=['POST'])
 def save_sensors():
     if not request.is_json:
@@ -44,6 +64,17 @@ def save_sensors():
             beehive = mongo.hives_collection.find_one({"_id": ObjectId(beehive_id)})
             for inserted_id in inserted_ids:
                 beehive['sensor_ids'].append(inserted_id)
+
+                sensor = mongo.sensors_collection.find_one({"_id": ObjectId(inserted_id)})
+                logger.info(f"sensor: {sensor}")
+                for data_type in sensor['data_capture']:
+                    result = mongo.data_types_collection.insert_one({
+                        "sensor_id": inserted_id,
+                        "data_type": data_type,
+                        "unit": data_type_units[data_type]
+                    })
+                    logger.info(f"Successfully saved data type {data_type} with ID: {result.inserted_id}")
+
             beehive['updated_at'] = datetime.utcnow().isoformat(timespec='milliseconds')
             beehive = util.camel_to_snake_key(beehive)
             mongo.hives_collection.update_one({"_id": ObjectId(beehive_id)}, {'$set': beehive}, upsert=False)
@@ -75,6 +106,17 @@ def update_sensor(id):
         logger.info(f"sensor: {str(sensor)}")
 
         mongo.sensors_collection.update_one({"_id": ObjectId(id)}, {'$set': sensor}, upsert=False)
+
+        for data_type in data['dataCapture']:
+            sensor_data_type = mongo.data_types_collection.find_one({"sensor_id": id, "data_type": data_type})
+            if sensor_data_type is None:
+                unit = data_type_units[data_type]
+                result = mongo.data_types_collection.insert_one({
+                    'sensor_id': id,
+                    'data_type': data_type,
+                    'unit': unit
+                })
+                logger.info(f"Successfully saved data type {data_type} with ID: {result.inserted_id}")
 
         logger.info(f"Successfully updated sensor with ID: {id}")
         return jsonify({'message': 'Sensor updated successfully', 'data': str(id)}), 201

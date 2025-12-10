@@ -20,6 +20,7 @@ class ApicultureMongoClient():
             self.farms_collection = self.db['farms']
             self.hives_collection = self.db['hives']
             self.sensors_collection = self.db['sensors']
+            self.data_types_collection = self.db['data_types']
             self.metrics_collection = self.db['metrics']
             self.image_collection = self.db['images']
 

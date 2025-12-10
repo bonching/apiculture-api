@@ -17,9 +17,9 @@ class TestSensorsApi(unittest.TestCase):
             data=json.dumps([
                 {
                     'name': "Bosch BME680 Env Sensor",
-                    'dataCapture': ["temperature", "humidity", "co2", "voc"],
+                    'dataCapture': ["temperature", "humidity"],
                     'status': "online",
-                    'beehiveId': "69355f4d500745757044f8d9",
+                    'beehiveId': "6937894152d8444820aae298",
                     'hiveLocation': "brood",
                     'systems': ["data_collection"],
                     'created_at': datetime.utcnow().isoformat(timespec='milliseconds')
@@ -28,7 +28,7 @@ class TestSensorsApi(unittest.TestCase):
                     'name': "MEMS Acoustic Monitor",
                     'dataCapture': ["sound", "vibration"],
                     'status': "online",
-                    'beehiveId': "69355f4d500745757044f8d9",
+                    'beehiveId': "6937894152d8444820aae298",
                     'hiveLocation': "brood",
                     'systems': ["data_collection", "defense"],
                     'created_at': datetime.utcnow().isoformat(timespec='milliseconds')
@@ -43,10 +43,45 @@ class TestSensorsApi(unittest.TestCase):
         self.assertEqual(data['message'], 'Data saved successfully')
         self.assertIn('data', data)
 
-    def test_update_sensor(self):
+    def test_sensor_add_data_type(self):
         response = self.app.put(
-            '/api/sensors/693692433b4b2eb130657057',
-            data=json.dumps({'name': 'Bosch BME680 Env Sensor - test update'}),
+            '/api/sensors/6938de0b4894fe4e61a531d3',
+            data=json.dumps({
+                'name': "Bosch BME680 Env Sensor - test add data type",
+                'dataCapture': ["temperature", "humidity", "co2", "voc"]
+            }),
+            content_type='application/json'
+        )
+        data = json.loads(response.data)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('message', data)
+        self.assertEqual(data['message'], 'Sensor updated successfully')
+        self.assertIn('data', data)
+
+    def test_sensor_remove_data_type(self):
+        response = self.app.put(
+            '/api/sensors/6938de0b4894fe4e61a531d3',
+            data=json.dumps({
+                'name': "Bosch BME680 Env Sensor - test remove data type",
+                'dataCapture': ["temperature", "humidity", "co2"]
+            }),
+            content_type='application/json'
+        )
+        data = json.loads(response.data)
+
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('message', data)
+        self.assertEqual(data['message'], 'Sensor updated successfully')
+        self.assertIn('data', data)
+
+    def test_sensor_add_previous_data_type(self):
+        response = self.app.put(
+            '/api/sensors/6938de0b4894fe4e61a531d3',
+            data=json.dumps({
+                'name': "Bosch BME680 Env Sensor - test add previous data type",
+                'dataCapture': ["temperature", "humidity", "co2", "voc"]
+            }),
             content_type='application/json'
         )
         data = json.loads(response.data)
