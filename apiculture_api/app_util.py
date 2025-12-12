@@ -26,7 +26,7 @@ class AppUtil:
             return obj  # Not a valid ObjectId string, return as-is
         elif isinstance(obj, dict):
             # Rename 'id' keys to '_id' and recurse on values
-            return {('_id' if key == 'id' else key): (self.str_to_objectid(value) if key == 'id' else value) for key, value in obj.items()}
+            return {key: (self.str_to_objectid(value) if key == '_id' else value) for key, value in obj.items()}
         elif isinstance(obj, list):
             return [self.str_to_objectid(item) for item in obj]
         return obj  # Primitives unchanged

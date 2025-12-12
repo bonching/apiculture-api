@@ -34,7 +34,7 @@ def save_farms():
         return jsonify({'error': 'No data provided'}), 400
 
     try:
-        result = mongo.farms_collection.insert_many(util.camel_to_snake_key(util.remove_id_key(data)))
+        result = mongo.farms_collection.insert_many(util.camel_to_snake_key(util.str_to_objectid(util.remove_id_key(data))))
         logger.info(f"Successfully saved farms with IDs: {result.inserted_ids}")
         return jsonify({'message': 'Data saved successfully', 'data': util.objectid_to_str(result.inserted_ids)}), 201
     except Exception as e:

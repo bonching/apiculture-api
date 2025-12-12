@@ -55,7 +55,7 @@ def save_sensors():
         return jsonify({'error': 'No data provided'}), 400
 
     try:
-        result = mongo.sensors_collection.insert_many(util.camel_to_snake_key(util.remove_id_key(data)))
+        result = mongo.sensors_collection.insert_many(util.camel_to_snake_key(util.str_to_objectid(util.remove_id_key(data))))
         inserted_ids = util.objectid_to_str(result.inserted_ids)
         logger.info(f"Successfully saved sensors with IDs: {result.inserted_ids}")
 
