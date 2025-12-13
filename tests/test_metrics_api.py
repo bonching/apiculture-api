@@ -17,7 +17,7 @@ class TestMetricsApi(unittest.TestCase):
             data=json.dumps([
                 {
                     'datetime': datetime.utcnow().isoformat(timespec='milliseconds'),
-                    'dataTypeId': "6936e531c0169bd88beeda6b",
+                    'dataTypeId': "693ae983cbd27112179d9555",
                     'value': 34.5
                 }
             ]),
