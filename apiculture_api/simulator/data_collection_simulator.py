@@ -42,7 +42,7 @@ class DataCollectionSimulator:
                 tasks.append((self.generate_random_readings, (data_type,), 60*5))
 
         runner = TaskRunner(tasks, default_interval=60*5)
-        time.sleep(60*60)
+        time.sleep(60*60*24)
         runner.shutdown(wait=True)
 
     def generate_random_readings(self, data_type):

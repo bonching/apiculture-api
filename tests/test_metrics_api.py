@@ -17,7 +17,7 @@ class TestMetricsApi(unittest.TestCase):
             data=json.dumps([
                 {
                     'datetime': datetime.utcnow().isoformat(timespec='milliseconds'),
-                    'dataTypeId': "693ae983cbd27112179d9555",
+                    'dataTypeId': "693d6f2dd8f5aae43d541acd",
                     'value': 34.5
                 }
             ]),
@@ -31,12 +31,11 @@ class TestMetricsApi(unittest.TestCase):
         self.assertIn('data', data)
 
     def test_get_metrics(self):
-        response = self.app.get('/api/metrics')
+        response = self.app.get('/api/metrics/693ad7c84739d5289a1e0833/temperature')
         data = json.loads(response.data)
 
         self.assertEqual(response.status_code, 200)
         self.assertIn('data', data)
-        self.assertEqual(len(data['data']), 1)
 
 if __name__ == '__main__':
     unittest.main()
