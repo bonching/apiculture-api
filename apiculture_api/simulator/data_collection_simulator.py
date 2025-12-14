@@ -4,8 +4,8 @@ from datetime import datetime, timezone
 
 import requests
 
-from apiculture_api.app_util import AppUtil
-from apiculture_api.simulator.task_runner import TaskRunner
+from apiculture_api.util.app_util import AppUtil
+from apiculture_api.util.task_runner import TaskRunner
 
 util = AppUtil()
 

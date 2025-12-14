@@ -1,6 +1,6 @@
 import time
 
-from apiculture_api.app_util import AppUtil
+from apiculture_api.util.app_util import AppUtil
 util = AppUtil()
 
 from apiculture_api.mongo_client import ApicultureMongoClient

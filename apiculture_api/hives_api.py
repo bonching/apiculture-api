@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
 from bson import ObjectId
 
-from apiculture_api.app_util import AppUtil
+from apiculture_api.util.app_util import AppUtil
 util = AppUtil()
 
 from flask import request, jsonify, Blueprint
