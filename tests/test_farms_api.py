@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
 from apiculture_api.app import app
 import json
@@ -21,7 +21,7 @@ class TestFarmsApi(unittest.TestCase):
                     'description': 'Main production farm with advanced monitoring systems',
                     'address': 'Calangcawan Sur, Vinzons, Camarines Norte',
                     'beehiveIds': [],
-                    'created_at': datetime.utcnow().isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
                 },
                 {
                     '_id': '693accdec9185a87bca56b01',
@@ -29,7 +29,7 @@ class TestFarmsApi(unittest.TestCase):
                     'description': 'Organic certified farm specializing in quality honey production',
                     'address': 'Calangcawan Sur, Vinzons, Camarines Norte',
                     'beehiveIds': [],
-                    'created_at': datetime.utcnow().isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
                 },
                 {
                     '_id': '693accdec9185a87bca56b02',
@@ -37,7 +37,7 @@ class TestFarmsApi(unittest.TestCase):
                     'description': 'Research and development apiary with experimental hives',
                     'address': 'Iberica, Labo, Camarines Norte',
                     'beehiveIds': [],
-                    'created_at': datetime.utcnow().isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
                 }
             ]),
             content_type='application/json'

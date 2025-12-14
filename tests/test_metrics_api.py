@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
 from apiculture_api.app import app
 import json
@@ -16,7 +16,7 @@ class TestMetricsApi(unittest.TestCase):
             '/api/metrics',
             data=json.dumps([
                 {
-                    'datetime': datetime.utcnow().isoformat(timespec='milliseconds'),
+                    'datetime': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
                     'dataTypeId': "693d6f2dd8f5aae43d541acd",
                     'value': 34.5
                 }

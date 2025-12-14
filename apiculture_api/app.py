@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from datetime import datetime
+from datetime import datetime, timezone
 from apiculture_api.farms_api import farms_api
 from apiculture_api.hives_api import hives_api
 from apiculture_api.sensors_api import sensors_api
@@ -97,7 +97,7 @@ def upload_image():
             'filename': image_file.filename,
             'data': image_data,
             'content_type': image_file.content_type,
-            'upload_time': datetime.utcnow()
+            'upload_time': datetime.now(timezone.utc)
         }
         # Insert into MongoDB
         result = mongo.image_collection.insert_one(image_doc)

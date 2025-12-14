@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 
 from apiculture_api.app_util import AppUtil
@@ -57,7 +57,7 @@ def update_farm(id):
 
         for key, value in data.items():
             farm[str(key)] = value
-        farm['updated_at'] = datetime.utcnow().isoformat(timespec='milliseconds')
+        farm['updated_at'] = datetime.now(timezone.utc).isoformat(timespec='milliseconds')
         farm = util.remove_id_key(farm)
 
         logger.info(f"farm: {str(farm)}")

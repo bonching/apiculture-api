@@ -1,6 +1,6 @@
 import random
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 
 import requests
 
@@ -107,7 +107,7 @@ class DataCollectionSimulator:
             value = round((base_value + (random.random() - 0.5) * variance) * 10) / 10
             data = [
                 {
-                    'datetime': datetime.utcnow().isoformat(timespec='milliseconds'),
+                    'datetime': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
                     'dataTypeId': util.objectid_to_str(data_type['_id']),
                     'value': value
                 }

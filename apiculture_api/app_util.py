@@ -1,5 +1,5 @@
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -133,3 +133,46 @@ class AppUtil:
     def snake_to_camel(self, name):
         components = name.split('_')
         return components[0] + ''.join(x.capitalize() for x in components[1:])
+
+    def time_ago(self, timestamp):
+        """
+        Convert a Unix timestamp to a relative time string like 'N seconds ago'.
+
+        Args:
+        timestamp (float or int): Unix timestamp (seconds since epoch).
+
+        Returns:
+        str: Relative time string.
+        """
+        now = datetime.now(timezone.utc)
+        past = datetime.fromtimestamp(timestamp, timezone.utc)
+        delta = now - past
+        total_seconds = delta.total_seconds()
+
+        if total_seconds < 1:
+            return "just now"
+
+        if total_seconds < 60:
+            seconds = int(total_seconds)
+            unit = "second" if seconds == 1 else "seconds"
+            return f"{seconds} {unit} ago"
+
+        elif total_seconds < 3600:
+            minutes = int(total_seconds / 60)
+            unit = "minute" if minutes == 1 else "minutes"
+            return f"{minutes} {unit} ago"
+
+        elif total_seconds < 86400:
+            hours = int(total_seconds / 3600)
+            unit = "hour" if hours == 1 else "hours"
+            return f"{hours} {unit} ago"
+
+        elif total_seconds < 7 * 86400:
+            days = int(total_seconds / 86400)
+            unit = "day" if days == 1 else "days"
+            return f"{days} {unit} ago"
+
+        else:
+            weeks = int(total_seconds / (7 * 86400))
+            unit = "week" if weeks == 1 else "weeks"
+            return f"{weeks} {unit} ago"

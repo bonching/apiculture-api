@@ -1,5 +1,5 @@
 import unittest
-from datetime import datetime
+from datetime import datetime, timezone
 
 from apiculture_api.app import app
 import json
@@ -64,7 +64,7 @@ class TestApicultureApi(unittest.TestCase):
     def _generate_random_temperature(self):
         return {
             'temperature': 25.5,
-            'timestamp': datetime.utcnow().isoformat(timespec='milliseconds'),
+            'timestamp': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
         }
 
 

@@ -1,4 +1,5 @@
-from datetime import datetime
+import traceback
+from datetime import datetime, timezone
 from bson import ObjectId
 
 from apiculture_api.app_util import AppUtil
@@ -23,20 +24,20 @@ logger = logging.getLogger('sensors_api')
 logger.setLevel(logging.INFO)
 
 data_type_units = {
-    'temperature': ' °C',
+    'temperature': '°C',
     'humidity': '%',
-    'co2': ' ppm',
-    'voc': ' kΩ',
-    'sound': ' dB',
-    'vibration': ' mm/s',
+    'co2': 'ppm',
+    'voc': 'kΩ',
+    'sound': 'dB',
+    'vibration': 'mm/s',
     'bee_count': '',
-    'lux': ' lux',
+    'lux': 'lux',
     'uv_index': '',
     'pheromone': '',
     'odor_compounds': '',
-    'rainfall': ' mm',
-    'wind_speed': ' km/h',
-    'barometric_pressure': ' hPa',
+    'rainfall': 'mm',
+    'wind_speed': 'km/h',
+    'barometric_pressure': 'hPa',
     'image': '',
     'pollen_concentration': '',
     'activity': ''
@@ -75,7 +76,7 @@ def save_sensors():
                     })
                     logger.info(f"Successfully saved data type {data_type} with ID: {result.inserted_id}")
 
-            beehive['updated_at'] = datetime.utcnow().isoformat(timespec='milliseconds')
+            beehive['updated_at'] = datetime.now(timezone.utc).isoformat(timespec='milliseconds')
             beehive = util.camel_to_snake_key(beehive)
             mongo.hives_collection.update_one({"_id": ObjectId(beehive_id)}, {'$set': beehive}, upsert=False)
 
@@ -100,7 +101,7 @@ def update_sensor(id):
 
         for key, value in data.items():
             sensor[str(key)] = value
-        sensor['updated_at'] = datetime.utcnow().isoformat(timespec='milliseconds')
+        sensor['updated_at'] = datetime.now(timezone.utc).isoformat(timespec='milliseconds')
         sensor = util.camel_to_snake_key(util.remove_id_key(sensor))
 
         logger.info(f"sensor: {str(sensor)}")
@@ -127,11 +128,36 @@ def update_sensor(id):
 @sensors_api.route('/api/sensors', methods=['GET'])
 def get_sensors():
     try:
-        sensors = util.snake_to_camel_key(util.objectid_to_str(list(mongo.sensors_collection.find())))
+        sensors = list(mongo.sensors_collection.find())
+
+        for sensor in sensors:
+            latest_readings = []
+            last_updated = None
+            for data_capture in sensor['data_capture']:
+                data_type = mongo.data_types_collection.find_one({"sensor_id": util.objectid_to_str(sensor["_id"]), "data_type": data_capture})
+                # logger.info(f"data_type: {data_type}")
+                if data_type is None:
+                    continue
+
+                data_type_id = util.objectid_to_str(data_type["_id"])
+                unit = data_type['unit']
+                metrics = mongo.metrics_collection.find({"data_type_id": data_type_id}).sort("datetime", -1).limit(1)
+                for metric in metrics:
+                    latest_readings.append(f"{metric['value']}{unit}")
+                    last_updated = metric['datetime'] if last_updated is None or last_updated < metric['datetime'] else last_updated
+                    logger.info(f"last_updated: {last_updated}")
+                    break
+
+            if len(latest_readings) > 0:
+                sensor['currentValue'] = ', '.join(latest_readings)
+                sensor['lastUpdated'] = util.time_ago(int(last_updated.replace(tzinfo=timezone.utc).timestamp()))
+
+        sensors = util.snake_to_camel_key(util.objectid_to_str(sensors))
         logger.info(f'data: {sensors}')
         return jsonify({'data': sensors}), 200
     except Exception as e:
         logger.error(f"Failed to get sensors: {str(e)}")
+        traceback.print_exc()
         return jsonify({'error': f'Failed to get sensors: {str(e)}'}), 500
 
 @sensors_api.route('/api/sensors/<id>', methods=['DELETE'])

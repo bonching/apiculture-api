@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from bson import ObjectId
 
 from apiculture_api.app_util import AppUtil
@@ -43,7 +43,7 @@ def save_hives():
         farm = mongo.farms_collection.find_one({"_id": ObjectId(farm_id)})
         for inserted_id in inserted_ids:
             farm['beehive_ids'].append(inserted_id)
-        farm['updated_at'] = datetime.utcnow().isoformat(timespec='milliseconds')
+        farm['updated_at'] = datetime.now(timezone.utc).isoformat(timespec='milliseconds')
         farm = util.camel_to_snake_key(farm)
         mongo.farms_collection.update_one({"_id": ObjectId(farm_id)}, {'$set': farm}, upsert=False)
 
@@ -68,7 +68,7 @@ def update_hive(id):
 
         for key, value in data.items():
             hive[str(key)] = value
-        hive['updated_at'] = datetime.utcnow().isoformat(timespec='milliseconds')
+        hive['updated_at'] = datetime.now(timezone.utc).isoformat(timespec='milliseconds')
         hive = util.camel_to_snake_key(util.remove_id_key(hive))
 
         logger.info(f"hive: {str(hive)}")
