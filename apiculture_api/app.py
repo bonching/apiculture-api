@@ -1,10 +1,10 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from datetime import datetime, timezone
-from apiculture_api.farms_api import farms_api
-from apiculture_api.hives_api import hives_api
-from apiculture_api.sensors_api import sensors_api
-from apiculture_api.metrics_api import metrics_api
+from apiculture_api.api.farms_api import farms_api
+from apiculture_api.api.hives_api import hives_api
+from apiculture_api.api.sensors_api import sensors_api
+from apiculture_api.api.metrics_api import metrics_api
 from apiculture_api.alerts_api import alerts_api
 
 import logging
@@ -33,7 +33,7 @@ CORS(
 )
 
 # Set up MongoDB connection
-from apiculture_api.mongo_client import ApicultureMongoClient
+from apiculture_api.util.mongo_client import ApicultureMongoClient
 mongo = ApicultureMongoClient()
 
 

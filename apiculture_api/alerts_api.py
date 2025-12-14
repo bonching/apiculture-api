@@ -4,7 +4,7 @@ util = AppUtil()
 from flask import jsonify, Blueprint
 alerts_api = Blueprint("alerts_api", __name__)
 
-from apiculture_api.mongo_client import ApicultureMongoClient
+from apiculture_api.util.mongo_client import ApicultureMongoClient
 mongo = ApicultureMongoClient()
 
 import logging

@@ -9,7 +9,7 @@ from apiculture_api.util.task_runner import TaskRunner
 
 util = AppUtil()
 
-from apiculture_api.mongo_client import ApicultureMongoClient
+from apiculture_api.util.mongo_client import ApicultureMongoClient
 mongo = ApicultureMongoClient()
 
 import logging

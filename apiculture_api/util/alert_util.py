@@ -3,7 +3,7 @@ import time
 from apiculture_api.util.app_util import AppUtil
 util = AppUtil()
 
-from apiculture_api.mongo_client import ApicultureMongoClient
+from apiculture_api.util.mongo_client import ApicultureMongoClient
 mongo = ApicultureMongoClient()
 
 

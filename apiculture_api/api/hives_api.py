@@ -7,7 +7,7 @@ util = AppUtil()
 from flask import request, jsonify, Blueprint
 hives_api = Blueprint("hives_api", __name__)
 
-from apiculture_api.mongo_client import ApicultureMongoClient
+from apiculture_api.util.mongo_client import ApicultureMongoClient
 mongo = ApicultureMongoClient()
 
 import logging
@@ -15,7 +15,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
     handlers=[
-        logging.FileHandler('apiculture-api.log'),
+        logging.FileHandler('../apiculture-api.log'),
         logging.StreamHandler()
     ]
 )
