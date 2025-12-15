@@ -107,7 +107,7 @@ class DataCollectionSimulator:
             value = round((base_value + (random.random() - 0.5) * variance) * 10) / 10
             data = [
                 {
-                    'datetime': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
+                    'datetime': datetime.now(timezone.utc),
                     'dataTypeId': util.objectid_to_str(data_type['_id']),
                     'value': value
                 }

@@ -1,11 +1,19 @@
+import traceback
+
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from datetime import datetime, timezone
+
 from apiculture_api.api.farms_api import farms_api
 from apiculture_api.api.hives_api import hives_api
 from apiculture_api.api.sensors_api import sensors_api
 from apiculture_api.api.metrics_api import metrics_api
 from apiculture_api.alerts_api import alerts_api
+
+from apiculture_api.util.app_util import AppUtil
+from apiculture_api.util.task_runner import TaskRunner
+
+util = AppUtil()
 
 import logging
 logging.basicConfig(
@@ -112,6 +120,35 @@ def upload_image():
         return jsonify({'error': f'Failed to save image: {str(e)}'}), 500
 
 
+def monitor_sensor_heartbeat():
+    sensors = list(mongo.sensors_collection.find())
+    for sensor in sensors:
+        data_types = (mongo.data_types_collection.find({"sensor_id": util.objectid_to_str(sensor["_id"])}, {"updated_at": 1})
+                     .sort("updated_at", -1)
+                     .limit(1))
+        data_type = next(data_types, None)
+        if data_type and 'updated_at' in data_type:
+            try:
+                last_sensor_update = datetime.fromtimestamp(int(data_type['updated_at'].replace(tzinfo=timezone.utc).timestamp()), timezone.utc)
+                delta = datetime.now(timezone.utc) - last_sensor_update
+                if delta.total_seconds() > 60 * 5 and sensor['status'] == 'online':
+                    logger.warning(f"Sensor {sensor['_id']} has not been updated in the last 5 minutes")
+                    mongo.sensors_collection.update_one({"_id": sensor['_id']}, {'$set': {'status': 'offline', 'updated_at': datetime.now(timezone.utc)}})
+                elif delta.total_seconds() <= 60 * 5 and sensor['status'] == 'offline':
+                    logger.info(f"Sensor {sensor['_id']} is now active")
+                    mongo.sensors_collection.update_one({"_id": sensor['_id']}, {'$set': {'status': 'online', 'updated_at': datetime.now(timezone.utc)}})
+            except Exception as e:
+                logger.error(f"Failed to update sensor status: {str(e)}")
+                logger.error(f'data_type: {data_type}')
+                logger.error(f"Doc type: {type(data_type)}")
+                logger.error(f"Doc keys: {list(data_type.keys())}")
+                traceback.print_exc()
+
+runner = TaskRunner([(monitor_sensor_heartbeat, None, 60*5)])
+
 if __name__ == '__main__':
-    logger.info("Starting Apiculture API on http://0.0.0.0:8080")
-    app.run(debug=True, host='0.0.0.0', port=8080)
+    try:
+        logger.info("Starting Apiculture API on http://0.0.0.0:8080")
+        app.run(debug=True, host='0.0.0.0', port=8080)
+    finally:
+        runner.shutdown(wait=True)

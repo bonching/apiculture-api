@@ -57,7 +57,7 @@ def update_farm(id):
 
         for key, value in data.items():
             farm[str(key)] = value
-        farm['updated_at'] = datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+        farm['updated_at'] = datetime.now(timezone.utc)
         farm = util.remove_id_key(farm)
 
         logger.info(f"farm: {str(farm)}")

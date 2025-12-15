@@ -1,3 +1,7 @@
+from datetime import datetime, timezone
+
+from bson import ObjectId
+
 from apiculture_api.util.app_util import AppUtil
 util = AppUtil()
 
@@ -35,6 +39,9 @@ def save_metrics():
         result = mongo.metrics_collection.insert_many(util.camel_to_snake_key(util.fix_datetime(util.remove_id_key(data))))
         inserted_ids = util.objectid_to_str(result.inserted_ids)
         logger.info(f"Successfully saved metrics with IDs: {result.inserted_ids}")
+
+        data_type_id = data[0]['dataTypeId']
+        mongo.data_types_collection.update_one({"_id": ObjectId(data_type_id)}, {'$set': {'updated_at': datetime.now(timezone.utc)}})
 
         return jsonify({'message': 'Data saved successfully', 'data': inserted_ids}), 201
     except Exception as e:

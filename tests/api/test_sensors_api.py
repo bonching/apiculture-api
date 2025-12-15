@@ -24,7 +24,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': "693ad7c84739d5289a1e0833",
                     'hiveLocation': "brood",
                     'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 },
                 {
                     '_id': '693ae983cbd27112179d9551',
@@ -35,7 +35,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': "693ad7c84739d5289a1e0833",
                     'hiveLocation': "brood",
                     'systems': ["data_collection", "defense"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 },
                 {
                     '_id': '693ae983cbd27112179d9552',
@@ -46,7 +46,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': "693ad7c84739d5289a1e0833",
                     'hiveLocation': "brood",
                     'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 },
                 {
                     '_id': '693ae983cbd27112179d9553',
@@ -57,7 +57,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': "693ad7c84739d5289a1e0833",
                     'hiveLocation': "external",
                     'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 },
                 {
                     '_id': '693ae983cbd27112179d9554',
@@ -68,7 +68,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': "693ad7c84739d5289a1e0833",
                     'hiveLocation': "brood",
                     'systems': ["data_collection", "defense"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 }
             ]),
             content_type='application/json'
@@ -94,7 +94,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': "693ad7c84739d5289a1e0834",
                     'hiveLocation': "honey_super",
                     'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 },
                 {
                     '_id': "693b4c90943e75b9d619e111",
@@ -105,7 +105,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': "693ad7c84739d5289a1e0834",
                     'hiveLocation': "honey_super",
                     'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 },
                 {
                     '_id': "693b4c90943e75b9d619e112",
@@ -116,7 +116,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': "693ad7c84739d5289a1e0834",
                     'hiveLocation': "external",
                     'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 }
             ]),
             content_type='application/json'
@@ -142,7 +142,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': "693ad7c84739d5289a1e0835",
                     'hiveLocation': "external",
                     'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 },
                 {
                     '_id': "693b4c90943e75b9d619e11b",
@@ -153,7 +153,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': "693ad7c84739d5289a1e0835",
                     'hiveLocation': "external",
                     'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 },
                 {
                     '_id': "693b4c90943e75b9d619e11c",
@@ -164,7 +164,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': "693ad7c84739d5289a1e0835",
                     'hiveLocation': "external",
                     'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 }
             ]),
             content_type='application/json'
@@ -190,7 +190,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': "693ad7c84739d5289a1e0836",
                     'hiveLocation': "brood",
                     'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 },
                 {
                     '_id': "693b4c90943e75b9d619e122",
@@ -201,7 +201,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': "693ad7c84739d5289a1e0836",
                     'hiveLocation': "brood",
                     'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 },
                 {
                     '_id': "693b4c90943e75b9d619e123",
@@ -212,7 +212,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': "693ad7c84739d5289a1e0836",
                     'hiveLocation': "external",
                     'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 }
             ]),
             content_type='application/json'
@@ -238,7 +238,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': "693ad7c84739d5289a1e0837",
                     'hiveLocation': "honey_super",
                     'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 },
                 {
                     '_id': "693b4c90943e75b9d619e12b",
@@ -249,7 +249,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': "693ad7c84739d5289a1e0837",
                     'hiveLocation': "honey_super",
                     'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 }
             ]),
             content_type='application/json'
@@ -275,7 +275,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': "693ad7c84739d5289a1e0838",
                     'hiveLocation': "brood",
                     'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 },
                 {
                     '_id': "693b4c90943e75b9d619e130",
@@ -286,7 +286,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': "693ad7c84739d5289a1e0838",
                     'hiveLocation': "brood",
                     'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 },
                 {
                     '_id': "693b4c90943e75b9d619e131",
@@ -297,7 +297,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': "693ad7c84739d5289a1e0838",
                     'hiveLocation': "external",
                     'systems': ["data_collection", "defense"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 }
             ]),
             content_type='application/json'
@@ -323,7 +323,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': None,
                     'hiveLocation': "external",
                     'systems': ["harvesting"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 },
                 {
                     '_id': "693b4c90943e75b9d619e13a",
@@ -334,7 +334,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': None,
                     'hiveLocation': "external",
                     'systems': ["harvesting"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 }
             ]),
             content_type='application/json'
@@ -359,7 +359,7 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': "25°C, 45%",
                     'beehiveId': None,
                     'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 },
                 {
                     '_id': "693b4c90943e75b9d619e13c",
@@ -369,7 +369,7 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': "N/A",
                     'beehiveId': None,
                     'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 }
             ]),
             content_type='application/json'

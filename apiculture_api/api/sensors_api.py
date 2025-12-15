@@ -72,11 +72,12 @@ def save_sensors():
                     result = mongo.data_types_collection.insert_one({
                         "sensor_id": inserted_id,
                         "data_type": data_type,
-                        "unit": data_type_units[data_type]
+                        "unit": data_type_units[data_type],
+                        "updated_at": datetime.now(timezone.utc)
                     })
                     logger.info(f"Successfully saved data type {data_type} with ID: {result.inserted_id}")
 
-            beehive['updated_at'] = datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+            beehive['updated_at'] = datetime.now(timezone.utc)
             beehive = util.camel_to_snake_key(beehive)
             mongo.hives_collection.update_one({"_id": ObjectId(beehive_id)}, {'$set': beehive}, upsert=False)
 
@@ -101,7 +102,7 @@ def update_sensor(id):
 
         for key, value in data.items():
             sensor[str(key)] = value
-        sensor['updated_at'] = datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+        sensor['updated_at'] = datetime.now(timezone.utc)
         sensor = util.camel_to_snake_key(util.remove_id_key(sensor))
 
         logger.info(f"sensor: {str(sensor)}")

@@ -64,7 +64,7 @@ class TestApicultureApi(unittest.TestCase):
     def _generate_random_temperature(self):
         return {
             'temperature': 25.5,
-            'timestamp': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
+            'timestamp': datetime.now(timezone.utc),
         }
 
 

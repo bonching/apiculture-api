@@ -24,7 +24,7 @@ class TestHivesApi(unittest.TestCase):
                     'harvestStatus': "excellent",
                     'honeyProduction': 45,
                     'sensorIds': [],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 },
                 {
                     '_id': '693ad7c84739d5289a1e0834',
@@ -35,7 +35,7 @@ class TestHivesApi(unittest.TestCase):
                     'harvestStatus': "good",
                     'honeyProduction': 38,
                     'sensorIds': [],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 },
                 {
                     '_id': '693ad7c84739d5289a1e0835',
@@ -46,7 +46,7 @@ class TestHivesApi(unittest.TestCase):
                     'harvestStatus': "fair",
                     'honeyProduction': 32,
                     'sensorIds': [],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 }
             ]),
             content_type='application/json'
@@ -71,7 +71,7 @@ class TestHivesApi(unittest.TestCase):
                     'harvestStatus': "excellent",
                     'honeyProduction': 52,
                     'sensorIds': [],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 },
                 {
                     '_id': '693ad7c84739d5289a1e0837',
@@ -82,7 +82,7 @@ class TestHivesApi(unittest.TestCase):
                     'harvestStatus': "poor",
                     'honeyProduction': 18,
                     'sensorIds': [],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 }
             ]),
             content_type='application/json'
@@ -107,7 +107,7 @@ class TestHivesApi(unittest.TestCase):
                     'harvestStatus': "good",
                     'honeyProduction': 41,
                     'sensorIds': [],
-                    'created_at': datetime.now(timezone.utc).isoformat(timespec='milliseconds')
+                    'created_at': datetime.now(timezone.utc)
                 }
             ]),
             content_type='application/json'
