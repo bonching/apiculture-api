@@ -31,7 +31,7 @@ class DataCollectionSimulator:
         pass
 
     def run(self):
-        sensors = list(mongo.sensors_collection.find({ 'active': True, 'simulate': True}))
+        sensors = list(mongo.sensors_collection.find({ 'active': True}))
         logger.info(f'sensors: {sensors}')
 
         tasks = []
@@ -47,7 +47,12 @@ class DataCollectionSimulator:
         runner.shutdown(wait=True)
 
     def generate_random_readings(self, data_type):
-        print("generating random readings for data type:" + str(data_type))
+        sensor = mongo.sensors_collection.find_one({'_id': util.str_to_objectid(data_type['sensor_id'])})
+        if sensor is None or sensor['active'] is False or sensor['simulate'] is False:
+            logger.info(f"Skipping simulation of sensor: {sensor['name']}")
+            return
+
+        logger.info(f"generating random readings for data type: {str(data_type)}")
 
         base_value = None
         variance = None

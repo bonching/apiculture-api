@@ -11,7 +11,7 @@ from apiculture_api.api.metrics_api import metrics_api
 from apiculture_api.alerts_api import alerts_api, enqueue_sse
 
 from apiculture_api.util.app_util import AppUtil
-from apiculture_api.util.config import SENSOR_HEARTBEAT_FREQUENCY
+from apiculture_api.util.config import SENSOR_HEARTBEAT_FREQUENCY, IDLE_TIME_TO_MARK_SENSOR_AS_OFFLINE
 from apiculture_api.util.task_runner import TaskRunner
 
 util = AppUtil()
@@ -132,10 +132,31 @@ def monitor_sensor_heartbeat():
             try:
                 last_sensor_update = datetime.fromtimestamp(int(data_type['updated_at'].replace(tzinfo=timezone.utc).timestamp()), timezone.utc)
                 delta = datetime.now(timezone.utc) - last_sensor_update
-                if delta.total_seconds() > 60 * 5 and sensor['status'] == 'online':
+                if delta.total_seconds() > IDLE_TIME_TO_MARK_SENSOR_AS_OFFLINE and sensor['status'] == 'online':
                     logger.warning(f"Sensor {sensor['_id']} has not been updated in the last 5 minutes")
                     mongo.sensors_collection.update_one({"_id": sensor['_id']}, {'$set': {'status': 'offline', 'updated_at': datetime.now(timezone.utc)}})
-                elif delta.total_seconds() <= 60 * 5 and sensor['status'] == 'offline':
+                    hive = mongo.hives_collection.find_one({"_id": util.str_to_objectid(sensor['beehive_id'])})
+                    if hive is None:
+                        event = {
+                          "severity": "critical",
+                          "title": "Sensor Non-Responsive",
+                          "message": f"Sensor {sensor['name']} has been offline for more than 5 minutes.",
+                          "timestamp": "just now",
+                          "timestampMs": datetime.now().isoformat(timespec='milliseconds')
+                        }
+                    else:
+                        farm = mongo.farms_collection.find_one({"_id": util.str_to_objectid(hive['farm_id'])})
+                        event = {
+                          "severity": "critical",
+                          "title": "Sensor Non-Responsive",
+                          "message": f"Sensor {sensor['name']} has been offline for more than 5 minutes.",
+                          "beehiveName": hive['name'],
+                          "farmName": farm['name'],
+                          "timestamp": "just now",
+                          "timestampMs": datetime.now().isoformat(timespec='milliseconds')
+                        }
+                    enqueue_sse(event)
+                elif delta.total_seconds() <= IDLE_TIME_TO_MARK_SENSOR_AS_OFFLINE and sensor['status'] == 'offline':
                     logger.info(f"Sensor {sensor['_id']} is now active")
                     mongo.sensors_collection.update_one({"_id": sensor['_id']}, {'$set': {'status': 'online', 'updated_at': datetime.now(timezone.utc)}})
                     hive = mongo.hives_collection.find_one({"_id": util.str_to_objectid(sensor['beehive_id'])})
