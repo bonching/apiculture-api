@@ -1,5 +1,6 @@
 import re
 from datetime import datetime, timezone
+from dateutil import parser
 
 from bson import ObjectId
 from bson.errors import InvalidId
@@ -176,3 +177,35 @@ class AppUtil:
             weeks = int(total_seconds / (7 * 86400))
             unit = "week" if weeks == 1 else "weeks"
             return f"{weeks} {unit} ago"
+
+    def convert_dict_str_to_utc_timestamp(data_dict, key):
+        """
+        Convert a specific dict value (datetime string) to UTC Unix timestamp (float).
+
+        Args:
+        data_dict (dict): Input dictionary.
+        key (str): The key whose value (str) to convert.
+
+        Returns:
+        dict: Updated dict with the value as UTC timestamp (float).
+        """
+        if key not in data_dict or not isinstance(data_dict[key], str):
+            print(f"Warning: Key '{key}' not found or not a string.")
+            return data_dict
+
+        date_str = data_dict[key]
+
+        # Parse the string to a timezone-aware datetime (assumes UTC if no TZ specified)
+        parsed_dt = parser.parse(date_str)
+        if parsed_dt.tzinfo is None:
+            # If naive, treat as UTC
+            parsed_dt = parsed_dt.replace(tzinfo=timezone.utc)
+        else:
+            # Convert to UTC if in another timezone
+            parsed_dt = parsed_dt.astimezone(timezone.utc)
+
+        # Convert to timestamp and update dict
+        timestamp = parsed_dt.timestamp()  # float; use int() for integer seconds
+        data_dict[key] = timestamp
+
+        return data_dict

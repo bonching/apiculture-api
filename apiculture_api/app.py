@@ -122,7 +122,7 @@ def upload_image():
 
 
 def monitor_sensor_heartbeat():
-    sensors = list(mongo.sensors_collection.find())
+    sensors = list(mongo.sensors_collection.find({ "active": True}))
     for sensor in sensors:
         data_types = (mongo.data_types_collection.find({"sensor_id": util.objectid_to_str(sensor["_id"])}, {"updated_at": 1, "beehive_id": 1})
                      .sort("updated_at", -1)

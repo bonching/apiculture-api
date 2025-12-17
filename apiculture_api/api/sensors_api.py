@@ -56,6 +56,8 @@ def save_sensors():
         return jsonify({'error': 'No data provided'}), 400
 
     try:
+        for record in data:
+            record['created_at'] = datetime.now(timezone.utc)
         result = mongo.sensors_collection.insert_many(util.camel_to_snake_key(util.str_to_objectid(util.remove_id_key(data))))
         inserted_ids = util.objectid_to_str(result.inserted_ids)
         logger.info(f"Successfully saved sensors with IDs: {result.inserted_ids}")
@@ -129,7 +131,7 @@ def update_sensor(id):
 @sensors_api.route('/api/sensors', methods=['GET'])
 def get_sensors():
     try:
-        sensors = list(mongo.sensors_collection.find())
+        sensors = list(mongo.sensors_collection.find({"active": True}))
 
         for sensor in sensors:
             latest_readings = []

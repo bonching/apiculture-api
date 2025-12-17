@@ -31,7 +31,7 @@ class DataCollectionSimulator:
         pass
 
     def run(self):
-        sensors = list(mongo.sensors_collection.find())
+        sensors = list(mongo.sensors_collection.find({ 'active': True, 'simulate': True}))
         logger.info(f'sensors: {sensors}')
 
         tasks = []

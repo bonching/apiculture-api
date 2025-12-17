@@ -23,8 +23,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': "34.5°C, 58%, 420ppm, 2.1kΩ",
                     'beehiveId': "693ad7c84739d5289a1e0833",
                     'hiveLocation': "brood",
-                    'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection"]
                 },
                 {
                     '_id': '693ae983cbd27112179d9551',
@@ -34,8 +35,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': "68dB, 0.3mm/s",
                     'beehiveId': "693ad7c84739d5289a1e0833",
                     'hiveLocation': "brood",
-                    'systems': ["data_collection", "defense"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection", "defense"]
                 },
                 {
                     '_id': '693ae983cbd27112179d9552',
@@ -45,8 +47,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': 45000,
                     'beehiveId': "693ad7c84739d5289a1e0833",
                     'hiveLocation': "brood",
-                    'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection"]
                 },
                 {
                     '_id': '693ae983cbd27112179d9553',
@@ -56,8 +59,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': "1200lux, UV4",
                     'beehiveId': "693ad7c84739d5289a1e0833",
                     'hiveLocation': "external",
-                    'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection"]
                 },
                 {
                     '_id': '693ae983cbd27112179d9554',
@@ -67,8 +71,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': "High",
                     'beehiveId': "693ad7c84739d5289a1e0833",
                     'hiveLocation': "brood",
-                    'systems': ["data_collection", "defense"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection", "defense"]
                 }
             ]),
             content_type='application/json'
@@ -93,8 +98,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': "33.8°C, 62%, 410ppm",
                     'beehiveId': "693ad7c84739d5289a1e0834",
                     'hiveLocation': "honey_super",
-                    'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection"]
                 },
                 {
                     '_id': "693b4c90943e75b9d619e111",
@@ -104,8 +110,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': 42000,
                     'beehiveId': "693ad7c84739d5289a1e0834",
                     'hiveLocation': "honey_super",
-                    'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection"]
                 },
                 {
                     '_id': "693b4c90943e75b9d619e112",
@@ -115,8 +122,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': "0mm, 5km/h, 1013hPa",
                     'beehiveId': "693ad7c84739d5289a1e0834",
                     'hiveLocation': "external",
-                    'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection"]
                 }
             ]),
             content_type='application/json'
@@ -141,8 +149,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': "35.2°C, 55%",
                     'beehiveId': "693ad7c84739d5289a1e0835",
                     'hiveLocation': "external",
-                    'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection"]
                 },
                 {
                     '_id': "693b4c90943e75b9d619e11b",
@@ -152,8 +161,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': 38000,
                     'beehiveId': "693ad7c84739d5289a1e0835",
                     'hiveLocation': "external",
-                    'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection"]
                 },
                 {
                     '_id': "693b4c90943e75b9d619e11c",
@@ -163,8 +173,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': "Active",
                     'beehiveId': "693ad7c84739d5289a1e0835",
                     'hiveLocation': "external",
-                    'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection"]
                 }
             ]),
             content_type='application/json'
@@ -189,8 +200,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': "35.1°C, 60%, 430ppm, 2.3kΩ",
                     'beehiveId': "693ad7c84739d5289a1e0836",
                     'hiveLocation': "brood",
-                    'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection"]
                 },
                 {
                     '_id': "693b4c90943e75b9d619e122",
@@ -200,8 +212,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': 48000,
                     'beehiveId': "693ad7c84739d5289a1e0836",
                     'hiveLocation': "brood",
-                    'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection"]
                 },
                 {
                     '_id': "693b4c90943e75b9d619e123",
@@ -211,8 +224,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': "Medium",
                     'beehiveId': "693ad7c84739d5289a1e0836",
                     'hiveLocation': "external",
-                    'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection"]
                 }
             ]),
             content_type='application/json'
@@ -237,8 +251,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': "36.5°C, 65%",
                     'beehiveId': "693ad7c84739d5289a1e0837",
                     'hiveLocation': "honey_super",
-                    'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection"]
                 },
                 {
                     '_id': "693b4c90943e75b9d619e12b",
@@ -248,8 +263,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': 40000,
                     'beehiveId': "693ad7c84739d5289a1e0837",
                     'hiveLocation': "honey_super",
-                    'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection"]
                 }
             ]),
             content_type='application/json'
@@ -274,8 +290,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': "34.2°C, 59%, 415ppm",
                     'beehiveId': "693ad7c84739d5289a1e0838",
                     'hiveLocation': "brood",
-                    'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection"]
                 },
                 {
                     '_id': "693b4c90943e75b9d619e130",
@@ -285,8 +302,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': 52000,
                     'beehiveId': "693ad7c84739d5289a1e0838",
                     'hiveLocation': "brood",
-                    'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection"]
                 },
                 {
                     '_id': "693b4c90943e75b9d619e131",
@@ -296,8 +314,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': "1100lux, UV3, 0.2mm/s",
                     'beehiveId': "693ad7c84739d5289a1e0838",
                     'hiveLocation': "external",
-                    'systems': ["data_collection", "defense"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection", "defense"]
                 }
             ]),
             content_type='application/json'
@@ -322,8 +341,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': "Medium",
                     'beehiveId': None,
                     'hiveLocation': "external",
-                    'systems': ["harvesting"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["harvesting"]
                 },
                 {
                     '_id': "693b4c90943e75b9d619e13a",
@@ -333,8 +353,9 @@ class TestSensorsApi(unittest.TestCase):
                     'currentValue': "High",
                     'beehiveId': None,
                     'hiveLocation': "external",
-                    'systems': ["harvesting"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["harvesting"]
                 }
             ]),
             content_type='application/json'
@@ -358,8 +379,9 @@ class TestSensorsApi(unittest.TestCase):
                     'status': "online",
                     'currentValue': "25°C, 45%",
                     'beehiveId': None,
-                    'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection"]
                 },
                 {
                     '_id': "693b4c90943e75b9d619e13c",
@@ -368,8 +390,9 @@ class TestSensorsApi(unittest.TestCase):
                     'status': "offline",
                     'currentValue': "N/A",
                     'beehiveId': None,
-                    'systems': ["data_collection"],
-                    'created_at': datetime.now(timezone.utc)
+                    'active': True,
+                    'simulate': True,
+                    'systems': ["data_collection"]
                 }
             ]),
             content_type='application/json'
