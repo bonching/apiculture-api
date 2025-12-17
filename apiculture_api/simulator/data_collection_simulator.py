@@ -5,6 +5,7 @@ from datetime import datetime, timezone
 import requests
 
 from apiculture_api.util.app_util import AppUtil
+from apiculture_api.util.config import DATA_COLLECTION_SIMULATION_FREQUENCY
 from apiculture_api.util.task_runner import TaskRunner
 
 util = AppUtil()
@@ -39,9 +40,9 @@ class DataCollectionSimulator:
             logger.info(f'data_types: {data_types}')
 
             for data_type in data_types:
-                tasks.append((self.generate_random_readings, (data_type,), 60*5))
+                tasks.append((self.generate_random_readings, (data_type,), DATA_COLLECTION_SIMULATION_FREQUENCY))
 
-        runner = TaskRunner(tasks, default_interval=60*5)
+        runner = TaskRunner(tasks)
         time.sleep(60*60*24)
         runner.shutdown(wait=True)
 
@@ -107,7 +108,7 @@ class DataCollectionSimulator:
             value = round((base_value + (random.random() - 0.5) * variance) * 10) / 10
             data = [
                 {
-                    'datetime': datetime.now(timezone.utc),
+                    'datetime': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
                     'dataTypeId': util.objectid_to_str(data_type['_id']),
                     'value': value
                 }

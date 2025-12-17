@@ -3,6 +3,8 @@ import threading
 import time
 import random
 
+from apiculture_api.util.config import TASK_RUNNER_RANDOM_DELAY_CEILING
+
 
 class TaskRunner:
     """
@@ -48,7 +50,7 @@ class TaskRunner:
 
     def _periodic_runner(self, task_func, task_args, interval, stop_event):
         # Random initial delay to stagger starts (1 to 100 seconds)
-        time.sleep(random.uniform(1, 100))
+        time.sleep(random.uniform(1, TASK_RUNNER_RANDOM_DELAY_CEILING))
 
         while not stop_event.is_set():
             try:

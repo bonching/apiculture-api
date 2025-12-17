@@ -8,9 +8,10 @@ from apiculture_api.api.farms_api import farms_api
 from apiculture_api.api.hives_api import hives_api
 from apiculture_api.api.sensors_api import sensors_api
 from apiculture_api.api.metrics_api import metrics_api
-from apiculture_api.alerts_api import alerts_api
+from apiculture_api.alerts_api import alerts_api, enqueue_sse
 
 from apiculture_api.util.app_util import AppUtil
+from apiculture_api.util.config import SENSOR_HEARTBEAT_FREQUENCY
 from apiculture_api.util.task_runner import TaskRunner
 
 util = AppUtil()
@@ -123,7 +124,7 @@ def upload_image():
 def monitor_sensor_heartbeat():
     sensors = list(mongo.sensors_collection.find())
     for sensor in sensors:
-        data_types = (mongo.data_types_collection.find({"sensor_id": util.objectid_to_str(sensor["_id"])}, {"updated_at": 1})
+        data_types = (mongo.data_types_collection.find({"sensor_id": util.objectid_to_str(sensor["_id"])}, {"updated_at": 1, "beehive_id": 1})
                      .sort("updated_at", -1)
                      .limit(1))
         data_type = next(data_types, None)
@@ -137,6 +138,27 @@ def monitor_sensor_heartbeat():
                 elif delta.total_seconds() <= 60 * 5 and sensor['status'] == 'offline':
                     logger.info(f"Sensor {sensor['_id']} is now active")
                     mongo.sensors_collection.update_one({"_id": sensor['_id']}, {'$set': {'status': 'online', 'updated_at': datetime.now(timezone.utc)}})
+                    hive = mongo.hives_collection.find_one({"_id": util.str_to_objectid(sensor['beehive_id'])})
+                    if hive is None:
+                        event = {
+                          "severity": "info",
+                          "title": "Sensor is back online",
+                          "message": f"Sensor {sensor['name']} is back online",
+                          "timestamp": "just now",
+                          "timestampMs": datetime.now().isoformat(timespec='milliseconds')
+                        }
+                    else:
+                        farm = mongo.farms_collection.find_one({"_id": util.str_to_objectid(hive['farm_id'])})
+                        event = {
+                          "severity": "info",
+                          "title": "Sensor is back online",
+                          "message": f"Sensor {sensor['name']} is back online",
+                          "beehiveName": hive['name'],
+                          "farmName": farm['name'],
+                          "timestamp": "just now",
+                          "timestampMs": datetime.now().isoformat(timespec='milliseconds')
+                        }
+                    enqueue_sse(event)
             except Exception as e:
                 logger.error(f"Failed to update sensor status: {str(e)}")
                 logger.error(f'data_type: {data_type}')
@@ -144,7 +166,7 @@ def monitor_sensor_heartbeat():
                 logger.error(f"Doc keys: {list(data_type.keys())}")
                 traceback.print_exc()
 
-runner = TaskRunner([(monitor_sensor_heartbeat, None, 60*5)])
+runner = TaskRunner([(monitor_sensor_heartbeat, None, SENSOR_HEARTBEAT_FREQUENCY)])
 
 if __name__ == '__main__':
     try:
