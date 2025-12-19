@@ -1,9 +1,13 @@
+import traceback
 from datetime import datetime, timezone
 
 from bson import ObjectId
 
 from apiculture_api.util.app_util import AppUtil
 util = AppUtil()
+
+from apiculture_api.ai.anomaly_detector import AnomalyDetector
+anomaly_detector = AnomalyDetector()
 
 from flask import request, jsonify, Blueprint
 metrics_api = Blueprint("metrics_api", __name__)
@@ -43,9 +47,13 @@ def save_metrics():
         data_type_id = data[0]['dataTypeId']
         mongo.data_types_collection.update_one({"_id": ObjectId(data_type_id)}, {'$set': {'updated_at': datetime.now(timezone.utc)}})
 
+        for metric in data:
+            anomaly_detector.check_anomaly(metric)
+
         return jsonify({'message': 'Data saved successfully', 'data': inserted_ids}), 201
     except Exception as e:
         logger.error(f"Failed to save metrics: {str(e)}")
+        traceback.print_exc()
         return jsonify({'error': f'Failed to save data: {str(e)}'}), 500
 
 @metrics_api.route('/api/metrics/<beehive_id>/<data_capture>', methods=['GET'])
