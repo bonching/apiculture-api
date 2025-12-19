@@ -71,7 +71,7 @@ def alerts_sse_stream():
 @alerts_api.route('/api/alerts', methods=['GET'])
 def get_alerts():
     try:
-        alerts = util.snake_to_camel_key(util.objectid_to_str(list(mongo.alerts_collection.find())))
+        alerts = util.snake_to_camel_key(util.objectid_to_str(list(mongo.alerts_collection.find().sort({'timestamp_ms': -1}).limit(30))))
         logger.info(f'data: {alerts}')
         return jsonify({'data': alerts}), 200
     except Exception as e:
