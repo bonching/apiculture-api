@@ -28,6 +28,11 @@ sse_queue = queue.Queue()
 def enqueue_sse(event_data):
     """'Callback' to enqueue a new event from tasks."""
     logger.info(f"Enqueuing new SSE event: {event_data}")
+
+    event_data['read'] = False
+    result = mongo.alerts_collection.insert_one(util.camel_to_snake_key(util.fix_datetime(util.remove_id_key(event_data))))
+    logger.info(f"Successfully saved alert with IDs: {result.inserted_id}")
+
     sse_queue.put({"data": event_data})
 
 def generate_alerts():
