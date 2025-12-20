@@ -5,8 +5,7 @@ from datetime import datetime, timezone
 import requests
 
 from apiculture_api.util.app_util import AppUtil
-from apiculture_api.util.config import DATA_COLLECTION_SIMULATION_FREQUENCY, DATA_COLLECTION_SIMULATION_ANOMALY_RATE, \
-    DATA_COLLECTION_METRICS
+from apiculture_api.util.config import DATA_COLLECTION_SIMULATION_FREQUENCY, DATA_COLLECTION_METRICS
 from apiculture_api.util.task_runner import TaskRunner
 
 util = AppUtil()
