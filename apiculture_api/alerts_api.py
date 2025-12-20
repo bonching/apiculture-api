@@ -36,6 +36,7 @@ def enqueue_sse(event_data):
     event_data['timestampMs'] = datetime.now(timezone.utc).timestamp()
     result = mongo.alerts_collection.insert_one(util.camel_to_snake_key(util.fix_datetime(util.remove_id_key(event_data))))
     logger.info(f"Successfully saved alert with IDs: {result.inserted_id}")
+    event_data['id'] = util.objectid_to_str(result.inserted_id)
 
     sse_queue.put({"data": event_data})
 
