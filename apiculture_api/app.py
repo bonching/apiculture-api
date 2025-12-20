@@ -141,8 +141,7 @@ def monitor_sensor_heartbeat():
                           "severity": "critical",
                           "title": "Sensor Non-Responsive",
                           "message": f"Sensor {sensor['name']} has been offline for more than 5 minutes.",
-                          "timestamp": "just now",
-                          "timestampMs": datetime.now().isoformat(timespec='milliseconds')
+                          "timestampMs": datetime.now()
                         }
                     else:
                         farm = mongo.farms_collection.find_one({"_id": util.str_to_objectid(hive['farm_id'])})
@@ -151,9 +150,7 @@ def monitor_sensor_heartbeat():
                           "title": "Sensor Non-Responsive",
                           "message": f"Sensor {sensor['name']} has been offline for more than 5 minutes.",
                           "beehiveName": hive['name'],
-                          "farmName": farm['name'],
-                          "timestamp": "just now",
-                          "timestampMs": datetime.now().isoformat(timespec='milliseconds')
+                          "farmName": farm['name']
                         }
                     enqueue_sse(event)
                 elif delta.total_seconds() <= IDLE_TIME_TO_MARK_SENSOR_AS_OFFLINE and sensor['status'] == 'offline':
@@ -164,9 +161,7 @@ def monitor_sensor_heartbeat():
                         event = {
                           "severity": "info",
                           "title": "Sensor is back online",
-                          "message": f"Sensor {sensor['name']} is back online",
-                          "timestamp": "just now",
-                          "timestampMs": datetime.now().isoformat(timespec='milliseconds')
+                          "message": f"Sensor {sensor['name']} is back online"
                         }
                     else:
                         farm = mongo.farms_collection.find_one({"_id": util.str_to_objectid(hive['farm_id'])})
@@ -175,9 +170,7 @@ def monitor_sensor_heartbeat():
                           "title": "Sensor is back online",
                           "message": f"Sensor {sensor['name']} is back online",
                           "beehiveName": hive['name'],
-                          "farmName": farm['name'],
-                          "timestamp": "just now",
-                          "timestampMs": datetime.now().isoformat(timespec='milliseconds')
+                          "farmName": farm['name']
                         }
                     enqueue_sse(event)
             except Exception as e:

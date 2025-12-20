@@ -51,6 +51,4 @@ class AnomalyDetector:
 
         alert = ANOMALY_MESSAGE_TEMPLATE[data_type][quantifier]
         alert['severity'] = 'warning'
-        alert['timestamp'] = 'just now'
-        alert['timestampMs'] = datetime.now().isoformat(timespec='milliseconds')
         enqueue_sse(alert)
