@@ -60,7 +60,7 @@ class DataCollectionSimulator:
 
         if base_value is not None and variance is not None:
             anomaly_rate = random.uniform(0.01, 100.00)
-            has_anomaly = anomaly_rate > DATA_COLLECTION_METRICS[data_type['data_type']]['anomaly_rate']
+            has_anomaly = anomaly_rate < DATA_COLLECTION_METRICS[data_type['data_type']]['anomaly_rate']
 
             seed = (random.random() - 0.5)
             value = round((base_value + (seed * variance) + (2 * variance if has_anomaly else 0)) * 10) / 10
