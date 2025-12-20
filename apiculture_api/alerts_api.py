@@ -1,10 +1,13 @@
 import json
 import queue
+from datetime import datetime, timezone
+
+from bson import ObjectId
 
 from apiculture_api.util.app_util import AppUtil
 util = AppUtil()
 
-from flask import jsonify, Blueprint, Response
+from flask import jsonify, Blueprint, Response, request
 
 alerts_api = Blueprint("alerts_api", __name__)
 
@@ -67,6 +70,35 @@ def alerts_sse_stream():
     response.headers['Access-Control-Allow-Origin'] = '*'
     logger.info("SSE connection established - MIME: text/event-stream")  # Debug log
     return response
+
+@alerts_api.route('/api/alerts/<id>', methods=['PUT'])
+def update_farm(id):
+    if not request.is_json:
+        logger.warning("Request does not contain JSON data")
+        return jsonify({'error': 'Request must be JSON'}), 400
+
+    data = request.json
+    if not data:
+        logger.warning("No data provided in JSON body")
+        return jsonify({'error': 'No data provided'}), 400
+
+    try:
+        alert = mongo.alerts_collection.find_one({"_id": ObjectId(id)})
+
+        for key, value in data.items():
+            alert[str(key)] = value
+        alert['updated_at'] = datetime.now(timezone.utc)
+        alert = util.remove_id_key(alert)
+
+        logger.info(f"alert: {str(alert)}")
+
+        mongo.alerts_collection.update_one({"_id": ObjectId(id)}, {'$set': util.camel_to_snake_key(alert)}, upsert=False)
+
+        logger.info(f"Successfully updated alert with ID: {id}")
+        return jsonify({'message': 'Alert updated successfully', 'data': str(id)}), 201
+    except Exception as e:
+        logger.error(f"Failed to update alert: {str(e)}")
+        return jsonify({'error': f'Failed to update alert: {str(e)}'}), 500
 
 @alerts_api.route('/api/alerts', methods=['GET'])
 def get_alerts():
