@@ -1,3 +1,6 @@
+MONGODB_URL = 'mongodb://localhost:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=apiculture'
+API_HOST = '192.168.68.103'
+API_PORT = 8081
 
 TASK_RUNNER_RANDOM_DELAY_CEILING = 10
 SENSOR_HEARTBEAT_FREQUENCY = 10
@@ -5,7 +8,7 @@ IDLE_TIME_TO_MARK_SENSOR_AS_OFFLINE = 40
 DATA_COLLECTION_SIMULATION_FREQUENCY = 30
 
 DATA_COLLECTION_METRICS = {
-    'temperature': { 'base_value': 34.5, 'variance': 2, 'unit': '°C', 'anomaly_rate': 10 },
+    'temperature': { 'base_value': 34.5, 'variance': 2, 'unit': '°C', 'anomaly_rate': 3 },
     'humidity': { 'base_value': 58, 'variance': 5, 'unit': '%', 'anomaly_rate': 1 },
     'co2': { 'base_value': 420, 'variance': 30, 'unit': 'ppm', 'anomaly_rate': 1 },
     'voc': { 'base_value': 2.1, 'variance': 0.3, 'unit': 'kΩ', 'anomaly_rate': 1 },
@@ -20,5 +23,6 @@ DATA_COLLECTION_METRICS = {
     'wind_speed': { 'base_value': 5, 'variance': 2, 'unit': 'km/h', 'anomaly_rate': 1 },
     'barometric_pressure': { 'base_value': 1013, 'variance': 5, 'unit': 'hPa', 'anomaly_rate': 1 },
     'pollen_concentration': { 'base_value': 65, 'variance': 15, 'unit': '', 'anomaly_rate': 1 },
-    'activity': { 'base_value': None, 'variance': None, 'unit': '', 'anomaly_rate': 1 }
+    'activity': { 'base_value': None, 'variance': None, 'unit': '', 'anomaly_rate': 1 },
+    'honey_harvested': { 'base_value': 200, 'variance': 100, 'unit': 'g', 'anomaly_rate': 0 }
 }

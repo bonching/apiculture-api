@@ -11,7 +11,7 @@ from apiculture_api.api.metrics_api import metrics_api
 from apiculture_api.alerts_api import alerts_api, enqueue_sse
 
 from apiculture_api.util.app_util import AppUtil
-from apiculture_api.util.config import SENSOR_HEARTBEAT_FREQUENCY, IDLE_TIME_TO_MARK_SENSOR_AS_OFFLINE
+from apiculture_api.util.config import SENSOR_HEARTBEAT_FREQUENCY, IDLE_TIME_TO_MARK_SENSOR_AS_OFFLINE, API_PORT
 from apiculture_api.util.task_runner import TaskRunner
 
 util = AppUtil()
@@ -184,7 +184,7 @@ runner = TaskRunner([(monitor_sensor_heartbeat, None, SENSOR_HEARTBEAT_FREQUENCY
 
 if __name__ == '__main__':
     try:
-        logger.info("Starting Apiculture API on http://0.0.0.0:8080")
-        app.run(debug=True, host='0.0.0.0', port=8080)
+        logger.info(f"Starting Apiculture API on http://0.0.0.0:{API_PORT}")
+        app.run(debug=True, host='0.0.0.0', port=API_PORT)
     finally:
         runner.shutdown(wait=True)

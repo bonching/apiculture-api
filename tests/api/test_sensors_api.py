@@ -336,7 +336,7 @@ class TestSensorsApi(unittest.TestCase):
                 {
                     '_id': "693b4c90943e75b9d619e139",
                     'name': "LoadCell HX711 Scale Sensor",
-                    'dataCapture': ["activity", "image"],
+                    'dataCapture': ["honey_harvested"],
                     'status': "online",
                     'currentValue': "Medium",
                     'beehiveId': None,

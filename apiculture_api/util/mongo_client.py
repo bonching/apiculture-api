@@ -1,6 +1,8 @@
 import logging
 from pymongo import MongoClient
 
+from apiculture_api.util.config import MONGODB_URL
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s',
@@ -15,7 +17,7 @@ logger.setLevel(logging.INFO)
 class ApicultureMongoClient():
     def __init__(self):
         try:
-            self.client = MongoClient('mongodb://localhost:27017/')
+            self.client = MongoClient(MONGODB_URL)
             self.db = self.client['apiculture']  # Updated database name
             self.farms_collection = self.db['farms']
             self.hives_collection = self.db['hives']

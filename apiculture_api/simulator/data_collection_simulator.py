@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 import requests
 
 from apiculture_api.util.app_util import AppUtil
-from apiculture_api.util.config import DATA_COLLECTION_SIMULATION_FREQUENCY, DATA_COLLECTION_METRICS
+from apiculture_api.util.config import DATA_COLLECTION_SIMULATION_FREQUENCY, DATA_COLLECTION_METRICS, API_HOST, API_PORT
 from apiculture_api.util.task_runner import TaskRunner
 
 util = AppUtil()
@@ -74,7 +74,7 @@ class DataCollectionSimulator:
                 logger.info(f"Sensor reading within the expected threshold: {str(data_type)}")
             else:
                 logger.info(f"Sensor reading with anomaly: {str(data_type)}")
-            response = requests.post('http://172.20.10.5:8080/api/metrics', json=data)
+            response = requests.post(f'http://{API_HOST}:{API_PORT}/api/metrics', json=data)
             logger.info(response.json())
 
 if __name__ == '__main__':
