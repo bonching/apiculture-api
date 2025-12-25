@@ -1,3 +1,4 @@
+import traceback
 from datetime import datetime, timezone
 from bson import ObjectId
 
@@ -87,11 +88,39 @@ def update_hive(id):
 @hives_api.route('/api/hives', methods=['GET'])
 def get_hives():
     try:
-        hives = util.snake_to_camel_key(util.objectid_to_str(list(mongo.hives_collection.find())))
+        hives = list(mongo.hives_collection.find())
+
+        honey_harvest_data_types = list(mongo.data_types_collection.find({'data_type': 'honey_harvested'}))
+        logger.info(f"get_hives honey_harvest_data_types: {honey_harvest_data_types}")
+        if honey_harvest_data_types:
+            data_type_ids = [util.objectid_to_str(dt['_id']) for dt in honey_harvest_data_types]
+
+            for hive in hives:
+                hive_id = util.objectid_to_str(hive['_id'])
+                pipeline = [
+                    {'$match': {
+                        'data_type_id': {'$in': data_type_ids},
+                        'beehive_id': hive_id,
+                    }},
+                    {'$group': {
+                        '_id': None,
+                        'total': {'$sum': '$value'}
+                    }}
+                ]
+
+                result = list(mongo.metrics_collection.aggregate(pipeline))
+                total_honey = round(result[0]['total'], 2) if result else 0
+                hive['honey_production'] = total_honey
+        else:
+            for hive in hives:
+                hive['honey_production'] = 0
+
+        hives = util.snake_to_camel_key(util.objectid_to_str(hives))
         logger.info(f'data: {hives}')
         return jsonify({'data': hives}), 200
     except Exception as e:
         logger.error(f"Failed to get hives: {str(e)}")
+        traceback.print_exc()
         return jsonify({'error': f'Failed to get hives: {str(e)}'}), 500
 
 @hives_api.route('/api/hives/<id>', methods=['DELETE'])

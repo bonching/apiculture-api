@@ -47,6 +47,7 @@ class HarvestSimulator:
                     {
                         'datetime': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
                         'dataTypeId': util.objectid_to_str(data_type['_id']),
+                        'beehiveId': '693ad7c84739d5289a1e0833',
                         'value': value
                     }
                 ]
