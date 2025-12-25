@@ -44,9 +44,8 @@ def save_hives():
         farm_id = data[0]['farmId']
         farm = mongo.farms_collection.find_one({"_id": ObjectId(farm_id)})
         for inserted_id in inserted_ids:
-            if inserted_id in farm['beehive_ids']:
-                continue
-            farm['beehive_ids'].append(inserted_id)
+            if inserted_id not in farm['beehive_ids']:
+                farm['beehive_ids'].append(inserted_id)
         farm['updated_at'] = datetime.now(timezone.utc)
         farm = util.camel_to_snake_key(farm)
         mongo.farms_collection.update_one({"_id": ObjectId(farm_id)}, {'$set': farm}, upsert=False)

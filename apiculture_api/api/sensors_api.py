@@ -45,24 +45,26 @@ def save_sensors():
         logger.info(f"Successfully saved sensors with IDs: {result.inserted_ids}")
 
         beehive_id = data[0]['beehiveId']
+        beehive = None
         if beehive_id:
             beehive = mongo.hives_collection.find_one({"_id": ObjectId(beehive_id)})
-            for inserted_id in inserted_ids:
-                if inserted_id in beehive['sensor_ids']:
-                    continue
+
+        for inserted_id in inserted_ids:
+            if beehive is not None and inserted_id not in beehive['sensor_ids']:
                 beehive['sensor_ids'].append(inserted_id)
 
-                sensor = mongo.sensors_collection.find_one({"_id": ObjectId(inserted_id)})
-                logger.info(f"sensor: {sensor}")
-                for data_type in sensor['data_capture']:
-                    result = mongo.data_types_collection.insert_one({
-                        "sensor_id": inserted_id,
-                        "data_type": data_type,
-                        "unit": DATA_COLLECTION_METRICS[data_type]['unit'],
-                        "updated_at": datetime.now(timezone.utc)
-                    })
-                    logger.info(f"Successfully saved data type {data_type} with ID: {result.inserted_id}")
+            sensor = mongo.sensors_collection.find_one({"_id": ObjectId(inserted_id)})
+            logger.info(f"sensor: {sensor}")
+            for data_type in sensor['data_capture']:
+                result = mongo.data_types_collection.insert_one({
+                    "sensor_id": inserted_id,
+                    "data_type": data_type,
+                    "unit": DATA_COLLECTION_METRICS[data_type]['unit'],
+                    "updated_at": datetime.now(timezone.utc)
+                })
+                logger.info(f"Successfully saved data type {data_type} with ID: {result.inserted_id}")
 
+        if beehive is not None:
             beehive['updated_at'] = datetime.now(timezone.utc)
             beehive = util.camel_to_snake_key(beehive)
             mongo.hives_collection.update_one({"_id": ObjectId(beehive_id)}, {'$set': beehive}, upsert=False)
