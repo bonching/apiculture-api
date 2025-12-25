@@ -25,26 +25,6 @@ logging.basicConfig(
 logger = logging.getLogger('sensors_api')
 logger.setLevel(logging.INFO)
 
-data_type_units = {
-    'temperature': '°C',
-    'humidity': '%',
-    'co2': 'ppm',
-    'voc': 'kΩ',
-    'sound': 'dB',
-    'vibration': 'mm/s',
-    'bee_count': '',
-    'lux': 'lux',
-    'uv_index': '',
-    'pheromone': '',
-    'odor_compounds': '',
-    'rainfall': 'mm',
-    'wind_speed': 'km/h',
-    'barometric_pressure': 'hPa',
-    'image': '',
-    'pollen_concentration': '',
-    'activity': ''
-}
-
 @sensors_api.route('/api/sensors', methods=['POST'])
 def save_sensors():
     if not request.is_json:
@@ -78,7 +58,7 @@ def save_sensors():
                     result = mongo.data_types_collection.insert_one({
                         "sensor_id": inserted_id,
                         "data_type": data_type,
-                        "unit": data_type_units[data_type],
+                        "unit": DATA_COLLECTION_METRICS[data_type]['unit'],
                         "updated_at": datetime.now(timezone.utc)
                     })
                     logger.info(f"Successfully saved data type {data_type} with ID: {result.inserted_id}")
@@ -118,7 +98,7 @@ def update_sensor(id):
         for data_type in data['dataCapture']:
             sensor_data_type = mongo.data_types_collection.find_one({"sensor_id": id, "data_type": data_type})
             if sensor_data_type is None:
-                unit = data_type_units[data_type]
+                unit = DATA_COLLECTION_METRICS[data_type]['unit'] if data_type in DATA_COLLECTION_METRICS else ''
                 result = mongo.data_types_collection.insert_one({
                     'sensor_id': id,
                     'data_type': data_type,

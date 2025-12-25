@@ -22,6 +22,7 @@ DATA_COLLECTION_METRICS = {
     'rainfall': { 'base_value': 0, 'variance': 0.5, 'unit': 'mm', 'anomaly_rate': 1 },
     'wind_speed': { 'base_value': 5, 'variance': 2, 'unit': 'km/h', 'anomaly_rate': 1 },
     'barometric_pressure': { 'base_value': 1013, 'variance': 5, 'unit': 'hPa', 'anomaly_rate': 1 },
+    'image': { 'base_value': None, 'variance': None, 'unit': '', 'anomaly_rate': 0 },
     'pollen_concentration': { 'base_value': 65, 'variance': 15, 'unit': '', 'anomaly_rate': 1 },
     'activity': { 'base_value': None, 'variance': None, 'unit': '', 'anomaly_rate': 1 },
     'honey_harvested': { 'base_value': 200, 'variance': 100, 'unit': 'g', 'anomaly_rate': 0 }
