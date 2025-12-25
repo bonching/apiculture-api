@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from bson import ObjectId
 
 from apiculture_api.util.app_util import AppUtil
+from apiculture_api.util.config import DATA_COLLECTION_METRICS
+
 util = AppUtil()
 
 from flask import request, jsonify, Blueprint
@@ -66,6 +68,8 @@ def save_sensors():
         if beehive_id:
             beehive = mongo.hives_collection.find_one({"_id": ObjectId(beehive_id)})
             for inserted_id in inserted_ids:
+                if inserted_id in beehive['sensor_ids']:
+                    continue
                 beehive['sensor_ids'].append(inserted_id)
 
                 sensor = mongo.sensors_collection.find_one({"_id": ObjectId(inserted_id)})
