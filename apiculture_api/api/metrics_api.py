@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 
 from bson import ObjectId
 
+from apiculture_api.alerts_api import enqueue_sse
 from apiculture_api.util.app_util import AppUtil
 util = AppUtil()
 
@@ -45,6 +46,19 @@ def save_metrics():
         logger.info(f"Successfully saved metrics with IDs: {result.inserted_ids}")
 
         data_type_id = data[0]['dataTypeId']
+
+        data_type = mongo.data_types_collection.find_one({"_id": ObjectId(data_type_id)})
+        if data_type.get('data_type') == 'honey_harvested':
+            honey_value = data[0].get('value', 0)
+            honey_unit = data_type.get('unit', 'g')
+            alert_event = {
+                'title': 'Honey Harvested',
+                'message': f'New honey harvest recorded: {honey_value}{honey_unit}',
+                'severity': 'info'
+            }
+            enqueue_sse(alert_event)
+            logger.info(f"Enqueued honey harvest alert: {honey_value}{honey_unit}")
+
         mongo.data_types_collection.update_one({"_id": ObjectId(data_type_id)}, {'$set': {'updated_at': datetime.now(timezone.utc)}})
 
         for metric in data:
