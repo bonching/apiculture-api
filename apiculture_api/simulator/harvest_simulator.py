@@ -42,8 +42,7 @@ class HarvestSimulator:
                 base_value = DATA_COLLECTION_METRICS[data_type['data_type']]['base_value']
                 variance = DATA_COLLECTION_METRICS[data_type['data_type']]['variance']
 
-                seed = (random.random() - 0.5)
-                value = round(base_value + (seed * variance) * 10) / 10
+                value = round(base_value + (random.random() * variance) * 10) / 10
                 data = [
                     {
                         'datetime': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
