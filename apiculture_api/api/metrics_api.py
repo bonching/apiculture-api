@@ -48,16 +48,25 @@ def save_metrics():
         data_type_id = data[0]['dataTypeId']
 
         data_type = mongo.data_types_collection.find_one({"_id": ObjectId(data_type_id)})
-        if data_type.get('data_type') == 'honey_harvested':
+        if data_type and data_type.get('data_type') == 'honey_harvested':
             honey_value = data[0].get('value', 0)
             honey_unit = data_type.get('unit', 'g')
+            beehiveId = data[0].get('beehiveId')
+
+            message = f'New honey harvest recorded: {honey_value}{honey_unit}'
+            if beehiveId:
+                hive = mongo.hives_collection.find_one({"_id": ObjectId(beehiveId)})
+                if hive:
+                    hive_name = hive.get('name', 'Unknown Hive')
+                    message = f'New honey harvest from {hive_name}: {honey_value}{honey_unit}'
+
             alert_event = {
                 'title': 'Honey Harvested',
-                'message': f'New honey harvest recorded: {honey_value}{honey_unit}',
+                'message': message,
                 'severity': 'info'
             }
             enqueue_sse(alert_event)
-            logger.info(f"Enqueued honey harvest alert: {honey_value}{honey_unit}")
+            logger.info(f"Enqueued honey harvest alert: {message}")
 
         mongo.data_types_collection.update_one({"_id": ObjectId(data_type_id)}, {'$set': {'updated_at': datetime.now(timezone.utc)}})
 
