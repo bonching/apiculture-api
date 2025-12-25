@@ -124,11 +124,11 @@ def upload_image():
 def monitor_sensor_heartbeat():
     sensors = list(mongo.sensors_collection.find({ "active": True}))
     for sensor in sensors:
-        data_types = (mongo.data_types_collection.find({"sensor_id": util.objectid_to_str(sensor["_id"])}, {"updated_at": 1, "beehive_id": 1})
+        data_types = (mongo.data_types_collection.find({"sensor_id": util.objectid_to_str(sensor["_id"])})
                      .sort("updated_at", -1)
                      .limit(1))
         data_type = next(data_types, None)
-        if data_type and 'updated_at' in data_type:
+        if data_type and 'updated_at' in data_type and not data_type.get('data_type', '').startswith('honey_harvested'):
             try:
                 last_sensor_update = datetime.fromtimestamp(int(data_type['updated_at'].replace(tzinfo=timezone.utc).timestamp()), timezone.utc)
                 delta = datetime.now(timezone.utc) - last_sensor_update
@@ -153,6 +153,7 @@ def monitor_sensor_heartbeat():
                           "farmName": farm['name']
                         }
                     enqueue_sse(event)
+                    continue # alert once per sensor
                 elif delta.total_seconds() <= IDLE_TIME_TO_MARK_SENSOR_AS_OFFLINE and sensor['status'] == 'offline':
                     logger.info(f"Sensor {sensor['_id']} is now active")
                     mongo.sensors_collection.update_one({"_id": sensor['_id']}, {'$set': {'status': 'online', 'updated_at': datetime.now(timezone.utc)}})
@@ -173,6 +174,7 @@ def monitor_sensor_heartbeat():
                           "farmName": farm['name']
                         }
                     enqueue_sse(event)
+                    continue # alert once per sensor
             except Exception as e:
                 logger.error(f"Failed to update sensor status: {str(e)}")
                 logger.error(f'data_type: {data_type}')
