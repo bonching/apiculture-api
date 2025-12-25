@@ -63,7 +63,10 @@ def save_metrics():
             alert_event = {
                 'title': 'Honey Harvested',
                 'message': message,
-                'severity': 'info'
+                'severity': 'info',
+                'beehiveId': beehiveId,
+                'dataType': "honey_harvested",
+                'sensorValue': 300
             }
             enqueue_sse(alert_event)
             logger.info(f"Enqueued honey harvest alert: {message}")
