@@ -7,6 +7,8 @@ from bson import ObjectId
 from apiculture_api.util.app_util import AppUtil
 util = AppUtil()
 
+from apiculture_api.util.iot_client import IoTClient
+
 from flask import request, jsonify, Blueprint
 harvest_api = Blueprint("harvest_api", __name__)
 
@@ -46,6 +48,31 @@ def simulate_harvest(harvest_id):
             'progress': 0,
             'started_at': datetime.now(timezone.utc).isoformat()
         }
+
+    # Connect to IoT Websocket and send servo motor command
+    logger.info(f"[{harvest_id}] Connecting to IoT Websocket...")
+    try:
+        with IoTClient() as iot_client:
+            # Send servo motor command
+            response = iot_client.send_command({'angle': 90})
+
+            if response.get('success', False):
+                logger.info(f"[{harvest_id}] Servo motor command sent successfully")
+                with harvest_jobs_lock:
+                    if harvest_id in harvest_jobs:
+                        harvest_jobs[harvest_id]['servo_status'] = 'success'
+            else:
+                logger.error(f"[{harvest_id}] Failed to send servo motor command: {response.get('error', 'Unknown error')}")
+                with harvest_jobs_lock:
+                    if harvest_id in harvest_jobs:
+                        harvest_jobs[harvest_id]['servo_status'] = 'failed'
+                        harvest_jobs[harvest_id]['servo_error'] = response.get('error', 'Unknown error')
+    except Exception as e:
+        logger.error(f"[{harvest_id}] Failed to connect to IoT Websocket: {str(e)}")
+        with harvest_jobs_lock:
+            if harvest_id in harvest_jobs:
+                harvest_jobs[harvest_id]['servo_status'] = 'failed'
+                harvest_jobs[harvest_id]['servo_error'] = str(e)
 
     for i in range(0, 16, 5):
         time.sleep(1) # Simulate time passing
@@ -158,7 +185,7 @@ def get_harvest_progress(harvest_id):
     try:
         with harvest_jobs_lock:
             if harvest_id not in harvest_jobs:
-                return jsonify(harvest_jobs[harvest_id]), 200
+                return jsonify({'error': 'Harvest job not found'}), 404
 
             job = harvest_jobs[harvest_id]
 
