@@ -8,6 +8,7 @@ from apiculture_api.api.farms_api import farms_api
 from apiculture_api.api.hives_api import hives_api
 from apiculture_api.api.sensors_api import sensors_api
 from apiculture_api.api.metrics_api import metrics_api
+from apiculture_api.api.harvest_api import harvest_api
 from apiculture_api.alerts_api import alerts_api, enqueue_sse
 
 from apiculture_api.util.app_util import AppUtil
@@ -34,6 +35,7 @@ app.register_blueprint(farms_api)
 app.register_blueprint(hives_api)
 app.register_blueprint(sensors_api)
 app.register_blueprint(metrics_api)
+app.register_blueprint(harvest_api)
 app.register_blueprint(alerts_api)
 
 CORS(
