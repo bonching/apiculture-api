@@ -54,7 +54,7 @@ def simulate_harvest(harvest_id):
     try:
         with IoTClient() as iot_client:
             # Send servo motor command
-            response = iot_client.send_command({'angle': 90})
+            response = iot_client.emit_event('needle_servo:angle', {'angle': 90})
 
             if response.get('success', False):
                 logger.info(f"[{harvest_id}] Servo motor command sent successfully")

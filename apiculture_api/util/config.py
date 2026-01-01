@@ -2,10 +2,9 @@ MONGODB_URL = 'mongodb://localhost:27017/?directConnection=true&serverSelectionT
 API_HOST = '192.168.68.106'
 API_PORT = 8081
 
-# IOT Websocket Configuration
-IOT_WEBSOCKET_URL = 'ws://192.168.68.106:5000/iot'
+# IOT Socket.IO Configuration
+IOT_WEBSOCKET_URL = 'http://192.168.68.106:5000'
 IOT_CONNECTION_TIMEOUT = 5
-IOT_SERVO_MOTOR_COMMAND = {'action': 'rotate', 'device': 'servo_motor', 'angle': 90}
 
 TASK_RUNNER_RANDOM_DELAY_CEILING = 10
 SENSOR_HEARTBEAT_FREQUENCY = 10

@@ -1,8 +1,7 @@
-import json
 import logging
-from websocket import create_connection, WebSocketTimeoutException, WebSocketException
+import socketio
 
-from apiculture_api.util.config import IOT_WEBSOCKET_URL, IOT_CONNECTION_TIMEOUT, IOT_SERVO_MOTOR_COMMAND
+from apiculture_api.util.config import IOT_WEBSOCKET_URL, IOT_CONNECTION_TIMEOUT
 
 logger = logging.getLogger('iot_client')
 if not logger.handlers:
@@ -14,79 +13,125 @@ if not logger.handlers:
 
 class IoTClient:
     """
-    Client for communicating with the IoT devices via WebSocket
+    Client for communicating with the IoT devices via Socket.IO
     """
 
-    def __init__(self, websocket_url=None, timeout=None):
+    def __init__(self, server_url=None, timeout=None):
         """
         Initialize IOT client
 
         Args:
-            websocket_url (str, optional): URL of the IoT WebSocket. Defaults to IOT_WEBSOCKET_URL.
+            server_url (str, optional): URL of the IoT WebSocket. Defaults to IOT_WEBSOCKET_URL.
             timeout (int, optional): Timeout for WebSocket connection. Defaults to IOT_CONNECTION_TIMEOUT.
         """
-        self.websocket_url = websocket_url or IOT_WEBSOCKET_URL
+        self.server_url = server_url or IOT_WEBSOCKET_URL
         self.timeout = timeout or IOT_CONNECTION_TIMEOUT
-        self.ws = None
+        self.sio = socketio.Client()
+        self.connected = False
+        self.response_callbacks = {}
+
+    def register_response_callback(self, event_name, callback):
+        """
+        Register a callback function to be called when an event is received
+
+        Args:
+            event_name (str): Event name
+            callback (function): Function to be called when an event is received
+        """
+        logger.info(f"Registering callback for event {event_name}")
+        self.response_callbacks[event_name] = callback
 
     def connect(self):
         """
-        Establish WebSocket connection with IoT device
+        Establish Socket.IO connection with IoT device
 
         Returns:
             bool: True if connection is successful, False otherwise
         """
         try:
-            logger.info(f"Connecting to IoT device at {self.websocket_url}")
-            self.ws = create_connection(self.websocket_url, timeout=self.timeout)
-            logger.info(f"Successfully connected to IoT device at {self.websocket_url}")
+            if self.connected:
+                logger.warning("IoT device is already connected")
+                return True
+
+            # Register event handlers before connecting
+            self.__register_event_handlers()
+
+            logger.info(f"Connecting to IoT device at {self.server_url}")
+            self.sio.connect(self.server_url, wait_timeout=self.timeout)
+            self.connected = True
+            logger.info(f"Successfully connected to IoT device at {self.server_url}")
             return True
-        except WebSocketTimeoutException:
-            logger.error(f"Failed to connect to IoT device at {self.websocket_url} within {self.timeout} seconds")
-            return False
-        except WebSocketException as e:
-            logger.error(f"Failed to connect to IoT device at {self.websocket_url}: {e}")
-            return False
         except Exception as e:
-            logger.error(f"Failed to connect to IoT device at {self.websocket_url}: {e}")
+            logger.error(f"Failed to connect to IoT device at {self.server_url}: {e}")
             return False
 
-    def send_command(self, command):
+    def emit_event(self, event_name, data):
         """
-        Send command to IoT device
+        Emit an event to IoT device
 
         Args:
-            command (dict): Command to send to IoT device
+            event_name (str): Event name
+            data (dict): Command to send to IoT device
 
         Returns:
             dict: Response from IoT device
         """
         try:
-            if not self.ws:
-                logger.warning("WebSocket connection not established; attempting to reconnect...")
+            if not self.connected:
+                logger.warning("Socket.IO connection not established; attempting to reconnect...")
                 if not self.connect():
                     return {'success': False, 'error': 'Failed to reconnect to IoT device'}
 
-            # Convert command to JSON string
-            command_json = json.dumps(command)
-            logger.info(f"Sending command to IoT device: {command_json}")
-
-            # Send command
-            self.ws.send(command_json)
-
-            # Wait for response
-            response = self.ws.recv()
-            logger.info(f"Received response from IoT device: {response}")
-
-            # Parse response
-            response_data = json.loads(response) if response else {'success': True}
-            return response_data
-        except WebSocketException:
-            logger.error("Failed to send command to IoT device")
-            return {'success': False, 'error': 'Failed to send command to IoT device'}
-        except json.JSONDecodeError:
-            logger.error("Failed to parse response from IoT device")
-            return {'success': False, 'error': 'Failed to parse response from IoT device'}
+            logger.info(f"Emitting event {event_name} to IoT device at {self.server_url} with data {data}")
+            self.sio.emit(event_name, data)
+            return {'success': True, 'event': event_name, 'data': data}
         except Exception as e:
             logger.error(f"Failed to send command to IoT device: {e}")
             return {'success': False, 'error': str(e)}
+
+    def close(self):
+        """
+        Close Socket.IO connection with IoT device
+        """
+        try:
+            if self.connected and self.sio.connected:
+                logger.info(f"Closing IoT device at {self.server_url}")
+                self.sio.disconnect()
+                self.connected = False
+        except Exception as e:
+            logger.error(f"Failed to close IoT device at {self.server_url}: {e}")
+
+    def __register_event_handlers(self):
+        """
+        Register Socket.IO event handlers for responses from IoT device
+        """
+        @self.sio.on('connect')
+        def on_connect():
+            logger.debug(f"Connected to IoT device at {self.server_url}")
+
+        @self.sio.on('disconnect')
+        def on_disconnect():
+            logger.debug(f"Disconnected from IoT device at {self.server_url}")
+            self.connected = False
+
+        @self.sio.on('*')
+        def catch_all(event, data):
+            """Generic catch all handler for all events"""
+            logger.info(f"Received event: {event} with data: {data}")
+
+            # Execute callback if registered for this event
+            if event in self.response_callbacks:
+                callback = self.response_callbacks[event]
+                try:
+                    callback(data)
+                except Exception as e:
+                    logger.error(f"Caught exception while handling event: {event}: {e}")
+
+    def __enter__(self):
+        """Context manager entry"""
+        self.connect()
+        return
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit"""
+        self.close()
