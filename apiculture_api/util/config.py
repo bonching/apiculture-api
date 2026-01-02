@@ -32,3 +32,9 @@ DATA_COLLECTION_METRICS = {
     'activity': { 'base_value': None, 'variance': None, 'unit': '', 'anomaly_rate': 1 },
     'honey_harvested': { 'base_value': 200, 'variance': 100, 'unit': 'g', 'anomaly_rate': 0 }
 }
+
+HARVEST_DEVICE = {
+    'id': 'harvest-1',
+    'name': 'Honey Extractor Pro X1',
+    'data_type_id': '694c91391738025ccfceb447'
+}

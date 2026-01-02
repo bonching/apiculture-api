@@ -29,12 +29,15 @@ logger = logging.getLogger('metrics_api')
 logger.setLevel(logging.INFO)
 
 @metrics_api.route('/api/metrics', methods=['POST'])
-def save_metrics():
+def _save_metrics():
     if not request.is_json:
         logger.warning("Request does not contain JSON data")
         return jsonify({'error': 'Request must be JSON'}), 400
 
     data = request.json
+    return save_metrics(data)
+
+def save_metrics(data):
     logger.info(f"data: {data}")
     if not data:
         logger.warning("No data provided in JSON body")

@@ -1,14 +1,16 @@
+import random
 import traceback
 import threading
 import time
 from datetime import datetime, timezone
 from bson import ObjectId
 
+from apiculture_api.api.metrics_api import save_metrics
 from apiculture_api.util.app_util import AppUtil
 util = AppUtil()
 
 from apiculture_api.util.iot_client import IoTClient
-from apiculture_api.util.config import IOT_SIMULATE_MODE
+from apiculture_api.util.config import IOT_SIMULATE_MODE, DATA_COLLECTION_METRICS, HARVEST_DEVICE
 
 from flask import request, jsonify, Blueprint
 harvest_api = Blueprint("harvest_api", __name__)
@@ -258,6 +260,22 @@ def initiate_harvest(harvest_id):
             iot_client.unregister_response_callback('needle_servo:response')
             iot_client.close()
 
+            # Save the harvested metrics
+            base_value = DATA_COLLECTION_METRICS['honey_harvested']['base_value']
+            variance = DATA_COLLECTION_METRICS['honey_harvested']['variance']
+            value = round(base_value + (random.random() * variance) * 10) / 10
+            data = [
+                {
+                    'datetime': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
+                    'dataTypeId': HARVEST_DEVICE['data_type_id'],
+                    'beehiveId': harvest_jobs[harvest_id].get('beehive_id'),
+                    'value': value
+                }
+            ]
+            logger.info(f'Honey harvested: {str(data)}')
+            response = save_metrics(data)
+            logger.info(response.json())
+
         # Start the state machine with the first state
         execute_calibrating()
 
@@ -290,6 +308,14 @@ def start_harvest():
     5. harvesting honey (33-100%)
     6. completed (100%)
     """
+    if not request.is_json:
+        logger.warning("Request does not contain JSON data")
+        return jsonify({'error': 'Request must be JSON'}), 400
+
+    data = request.json
+    device_id = data['deviceId']
+    beehive_id = data['beehiveId']
+
     try:
         # Generate a unique harvest_id
         harvest_id = str(ObjectId())
@@ -299,6 +325,8 @@ def start_harvest():
         # Initialize harvest job
         with harvest_jobs_lock:
             harvest_jobs[harvest_id] = {
+                'device_id': device_id,
+                'beehive_id': beehive_id,
                 'state': 'calibrating',
                 'progress': 0,
                 'started_at': datetime.now(timezone.utc).isoformat()

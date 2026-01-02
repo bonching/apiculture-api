@@ -1,4 +1,6 @@
 import logging
+import traceback
+
 import socketio
 import time
 import random
@@ -158,6 +160,7 @@ class IoTClient:
                     callback(response_data)
                 except Exception as e:
                     logger.error(f"Error executing callback for simulated event {response_event}: {e}")
+                    traceback.print_exc()
 
         # run simulate in background thread
         thread = Thread(target=delayed_response, daemon=True)
