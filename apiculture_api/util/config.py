@@ -3,9 +3,9 @@ API_HOST = '192.168.68.106'
 API_PORT = 8081
 
 # IOT Socket.IO Configuration
-IOT_WEBSOCKET_URL = 'http://192.168.68.106:5000'
+IOT_WEBSOCKET_URL = 'http://192.168.68.117:5000'
 IOT_CONNECTION_TIMEOUT = 5
-IOT_SIMULATE_MODE = True # Enable simulation mode (No actual IoT connection required)
+IOT_SIMULATE_MODE = False # Enable simulation mode (No actual IoT connection required)
 
 TASK_RUNNER_RANDOM_DELAY_CEILING = 10
 SENSOR_HEARTBEAT_FREQUENCY = 10

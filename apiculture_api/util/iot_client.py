@@ -208,7 +208,7 @@ class IoTClient:
                 try:
                     callback(data)
                 except Exception as e:
-                    logger.error(f"Caught exception while handling event: {event}: {e}")
+                    logger.error(f"Caught exception while handling event: {event}, callback: {callback}: {e}")
 
     def __enter__(self):
         """Context manager entry"""

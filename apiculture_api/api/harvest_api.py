@@ -21,7 +21,7 @@ mongo = ApicultureMongoClient()
 import logging
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s [%(levelname)s] %(message)s',
+    format='%(asctime)s - %(name)s:%(lineno)d - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler('../apiculture-api.log'),
         logging.StreamHandler()
@@ -302,10 +302,10 @@ def initiate_harvest(harvest_id):
 
                 # Register callback for this specific action's response
                 if current_idx > 0:
-                    previous_event_name, _ = harvest_actions[current_idx]
+                    previous_event_name, _ = harvest_actions[current_idx - 1]
                     previous_response_event = previous_event_name.split(':')[0] + ':response'
                     iot_client.unregister_response_callback(previous_response_event)
-                if current_idx >= len(harvest_actions):
+                if current_idx + 1 >= len(harvest_actions): # last action is completed
                     iot_client.register_response_callback(response_event, on_harvesting_complete)
                 else:
                     iot_client.register_response_callback(response_event, execute_next_action)
