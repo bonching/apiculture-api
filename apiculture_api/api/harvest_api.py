@@ -141,7 +141,7 @@ def initiate_harvest(harvest_id):
             iot_client.register_response_callback('needle_servo:response', on_calibrating_complete)
 
             # Emit event to IoT device (callback will trigger next state)
-            response = iot_client.emit_event('needle_servo:angle', {'angle': 90, 'state': 'calibrating'})
+            response = iot_client.emit_event('needle_servo:angle', {'angle': 45, 'state': 'calibrating'})
             logger.info(f"Emitted event with response: {response}")
 
         def execute_starting_smoker():
@@ -164,9 +164,9 @@ def initiate_harvest(harvest_id):
                         harvest_jobs[harvest_id]['progress'] = 20
 
             iot_client.unregister_response_callback('needle_servo:response')
-            iot_client.register_response_callback('needle_servo:response', on_starting_smoker_complete)
+            iot_client.register_response_callback('pole_servo:response', on_starting_smoker_complete)
 
-            response = iot_client.emit_event('needle_servo:angle', {'angle': 45, 'state': 'starting_smoker'})
+            response = iot_client.emit_event('pole_servo:angle', {'angle': 90, 'state': 'starting_smoker'})
             logger.info(f"Emitted event with response: {response}")
 
         def execute_capturing_images():
@@ -188,10 +188,10 @@ def initiate_harvest(harvest_id):
                     if harvest_id in harvest_jobs:
                         harvest_jobs[harvest_id]['progress'] = 30
 
-            iot_client.unregister_response_callback('needle_servo:response')
-            iot_client.register_response_callback('needle_servo:response', on_capturing_images_complete)
+            iot_client.unregister_response_callback('pole_servo:response')
+            iot_client.register_response_callback('pole_servo:response', on_capturing_images_complete)
 
-            response = iot_client.emit_event('needle_servo:angle', {'angle': 75, 'state': 'capturing_images'})
+            response = iot_client.emit_event('pole_servo:angle', {'angle': 135, 'state': 'capturing_images'})
             logger.info(f"Emitted event with response: {response}")
 
         def execute_analyzing_honeypots():
@@ -213,14 +213,14 @@ def initiate_harvest(harvest_id):
                     if harvest_id in harvest_jobs:
                         harvest_jobs[harvest_id]['progress'] = 32
 
-            iot_client.unregister_response_callback('needle_servo:response')
-            iot_client.register_response_callback('needle_servo:response', on_analyzing_honeypots_complete)
+            iot_client.unregister_response_callback('pole_servo:response')
+            iot_client.register_response_callback('pole_servo:response', on_analyzing_honeypots_complete)
 
-            response = iot_client.emit_event('needle_servo:angle', {'angle': 15, 'state': 'analyzing_honeypots'})
+            response = iot_client.emit_event('pole_servo:angle', {'angle': 180, 'state': 'analyzing_honeypots'})
             logger.info(f"Emitted event with response: {response}")
 
         def execute_harvesting():
-            """State 5: harvesting (33-100%)"""
+            """State 5: harvesting (33-99%)"""
             logger.info(f"{harvest_id} Executing state: harvesting")
             with harvest_jobs_lock:
                 harvest_jobs[harvest_id] = {
@@ -228,7 +228,7 @@ def initiate_harvest(harvest_id):
                 }
 
             if IOT_SIMULATE_MODE:
-                for i in range(33, 101, 1):
+                for i in range(33, 100, 1):
                     time.sleep(1)
                     with harvest_jobs_lock:
                         if harvest_id in harvest_jobs and harvest_jobs[harvest_id]['state'] == 'harvesting':
@@ -236,12 +236,12 @@ def initiate_harvest(harvest_id):
             else:
                 with harvest_jobs_lock:
                     if harvest_id in harvest_jobs:
-                        harvest_jobs[harvest_id]['progress'] = 100
+                        harvest_jobs[harvest_id]['progress'] = 99
 
-            iot_client.unregister_response_callback('needle_servo:response')
-            iot_client.register_response_callback('needle_servo:response', on_harvesting_complete)
+            iot_client.unregister_response_callback('pole_servo:response')
+            iot_client.register_response_callback('pole_servo:response', on_harvesting_complete)
 
-            response = iot_client.emit_event('needle_servo:angle', {'angle': 180, 'state': 'harvesting'})
+            response = iot_client.emit_event('pole_servo:rotate', {'angle': -180, 'state': 'harvesting'})
             logger.info(f"Emitted event with response: {response}")
 
         def execute_completed():
