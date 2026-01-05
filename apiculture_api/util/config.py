@@ -3,7 +3,8 @@ API_HOST = '192.168.68.106'
 API_PORT = 8081
 
 # IOT Socket.IO Configuration
-IOT_WEBSOCKET_URL = 'http://192.168.68.117:5000'
+IOT_HARVEST_WEBSOCKET_URL = 'http://192.168.68.117:5000'
+IOT_DATA_COLLECTION_WEBSOCKET_URL = 'http://192.168.68.111:5000'
 IOT_CONNECTION_TIMEOUT = 5
 IOT_SIMULATE_MODE = False # Enable simulation mode (No actual IoT connection required)
 
@@ -38,3 +39,12 @@ HARVEST_DEVICE = {
     'name': 'Honey Extractor Pro X1',
     'data_type_id': '694c91391738025ccfceb447'
 }
+
+HARVEST_ACTIONS = [
+    ('pole_servo:angle', {'angle': 150, 'state': 'harvesting'}),
+    ('slider_servo:rotate', {'direction': 'forward', 'duration': 10, 'state': 'harvesting'}),
+    ('extruder_servo:rotate', {'direction': 'extend', 'duration': 5, 'state': 'harvesting'}),
+    ('extruder_servo:rotate', {'direction': 'retract', 'duration': 5, 'state': 'harvesting'}),
+    ('slider_servo:rotate', {'direction': 'backward', 'duration': 10, 'state': 'harvesting'}),
+    ('pole_servo:angle', {'angle': -150, 'state': 'harvesting'})
+]

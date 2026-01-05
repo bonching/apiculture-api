@@ -6,7 +6,7 @@ import time
 import random
 from threading import Thread
 
-from apiculture_api.util.config import IOT_WEBSOCKET_URL, IOT_CONNECTION_TIMEOUT, IOT_SIMULATE_MODE
+from apiculture_api.util.config import IOT_HARVEST_WEBSOCKET_URL, IOT_CONNECTION_TIMEOUT, IOT_SIMULATE_MODE
 
 logger = logging.getLogger('iot_client')
 if not logger.handlers:
@@ -30,7 +30,7 @@ class IoTClient:
             timeout (int, optional): Timeout for WebSocket connection. Defaults to IOT_CONNECTION_TIMEOUT.
             simulate (bool, optional): Simulate IoT connection. Defaults to False.
         """
-        self.server_url = server_url or IOT_WEBSOCKET_URL
+        self.server_url = server_url or IOT_HARVEST_WEBSOCKET_URL
         self.timeout = timeout or IOT_CONNECTION_TIMEOUT
         self.simulate = simulate if simulate is not None else IOT_SIMULATE_MODE
         self.sio = socketio.Client() if not self.simulate else None
