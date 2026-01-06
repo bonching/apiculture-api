@@ -10,7 +10,8 @@ from apiculture_api.util.app_util import AppUtil
 util = AppUtil()
 
 from apiculture_api.util.iot_client import IoTClient
-from apiculture_api.util.config import IOT_SIMULATE_MODE, DATA_COLLECTION_METRICS, HARVEST_DEVICE, HARVEST_ACTIONS
+from apiculture_api.util.config import IOT_SIMULATE_MODE, DATA_COLLECTION_METRICS, HARVEST_DEVICE, HARVEST_ACTIONS, \
+    IOT_DATA_COLLECTION_WEBSOCKET_URL, IOT_CONNECTION_TIMEOUT, IOT_HARVEST_WEBSOCKET_URL
 
 from flask import request, jsonify, Blueprint
 harvest_api = Blueprint("harvest_api", __name__)
@@ -52,11 +53,12 @@ def initiate_harvest(harvest_id):
     logger.info(f"Starting event-driven harvest for {harvest_id}")
 
     # Create Iot client instance for this harvest
-    iot_client = IoTClient()
+    iot_client_harvest = IoTClient(IOT_HARVEST_WEBSOCKET_URL, IOT_CONNECTION_TIMEOUT, IOT_SIMULATE_MODE)
+    iot_client_data_collection = IoTClient(IOT_DATA_COLLECTION_WEBSOCKET_URL, IOT_CONNECTION_TIMEOUT, IOT_SIMULATE_MODE)
 
     try:
         # Connect to IoT device
-        if not iot_client.connect():
+        if not iot_client_harvest.connect():
             logger.error(f"Failed to connect to IoT client")
             with harvest_jobs_lock:
                 if harvest_id in harvest_jobs:
@@ -102,7 +104,7 @@ def initiate_harvest(harvest_id):
                 if harvest_id in harvest_jobs:
                     harvest_jobs[harvest_id]['analyzing_honeypots_response'] = data
 
-            execute_harvesting()
+            execute_harvesting(data)
 
         def on_harvesting_complete(data):
             """Callback for harvesting -> cleanup"""
@@ -148,10 +150,10 @@ def initiate_harvest(harvest_id):
                         harvest_jobs[harvest_id]['progress'] = 5
 
             # Register callback for next state AFTER progress completes
-            iot_client.register_response_callback('needle_servo:response', on_calibrating_complete)
+            iot_client_harvest.register_response_callback('needle_servo:response', on_calibrating_complete)
 
             # Emit event to IoT device (callback will trigger next state)
-            response = iot_client.emit_event('needle_servo:angle', {'angle': 90, 'state': 'calibrating'})
+            response = iot_client_harvest.emit_event('needle_servo:angle', {'angle': 90, 'state': 'calibrating'})
             logger.info(f"Emitted event with response: {response}")
 
         def execute_starting_smoker():
@@ -173,10 +175,10 @@ def initiate_harvest(harvest_id):
                     if harvest_id in harvest_jobs:
                         harvest_jobs[harvest_id]['progress'] = 20
 
-            iot_client.unregister_response_callback('needle_servo:response')
-            iot_client.register_response_callback('smoker:response', on_starting_smoker_complete)
+            iot_client_harvest.unregister_response_callback('needle_servo:response')
+            iot_client_harvest.register_response_callback('smoker:response', on_starting_smoker_complete)
 
-            response = iot_client.emit_event('smoker:control', {'action': 'on', 'state': 'starting_smoker'})
+            response = iot_client_harvest.emit_event('smoker:control', {'action': 'on', 'state': 'starting_smoker'})
             logger.info(f"Emitted event with response: {response}")
 
         def execute_capturing_images():
@@ -198,10 +200,10 @@ def initiate_harvest(harvest_id):
                     if harvest_id in harvest_jobs:
                         harvest_jobs[harvest_id]['progress'] = 30
 
-            iot_client.unregister_response_callback('smoker:response')
-            iot_client.register_response_callback('camera:response', on_capturing_images_complete)
+            iot_client_harvest.unregister_response_callback('smoker:response')
+            iot_client_data_collection.register_response_callback('camera:response', on_capturing_images_complete)
 
-            response = iot_client.emit_event('camera:capture', {'state': 'capturing_images'})
+            response = iot_client_data_collection.emit_event('camera:capture', {'state': 'capturing_images'})
             logger.info(f"Emitted event with response: {response}")
 
         def execute_analyzing_honeypots():
@@ -223,23 +225,23 @@ def initiate_harvest(harvest_id):
                     if harvest_id in harvest_jobs:
                         harvest_jobs[harvest_id]['progress'] = 32
 
-            iot_client.unregister_response_callback('camera:response')
-            iot_client.register_response_callback('camera:response', on_analyzing_honeypots_complete)
+            iot_client_data_collection.unregister_response_callback('camera:response')
+            iot_client_data_collection.close()
 
-            response = iot_client.emit_event('camera:capture', {'state': 'analyzing_honeypots'})
-            logger.info(f"Emitted event with response: {response}")
+            time.sleep(2) # do image analysis
+            on_analyzing_honeypots_complete(HARVEST_ACTIONS)
 
-        def execute_harvesting():
+        def execute_harvesting(harvest_actions):
             """State 5: harvesting (33-99%) - Event-driven sequential actions"""
             # Define all harvest actions to execute
 
-            logger.info(f"{harvest_id} Executing state: harvesting with {len(HARVEST_ACTIONS)} actions")
+            logger.info(f"{harvest_id} Executing state: harvesting with {len(harvest_actions)} actions")
             with harvest_jobs_lock:
                 harvest_jobs[harvest_id] = {
                     'state': 'harvesting',
                     'progress': 33,
                     'current_action_index': 0,
-                    'total_actions': len(HARVEST_ACTIONS)
+                    'total_actions': len(harvest_actions)
                 }
 
             # Track current action index
@@ -273,18 +275,18 @@ def initiate_harvest(harvest_id):
                 #     return
 
                 # Get current action
-                event_name, event_data = HARVEST_ACTIONS[current_idx]
-                logger.info(f"{harvest_id} Executing harvest action: {current_idx + 1}/{len(HARVEST_ACTIONS)}: {event_name}, {event_data}")
+                event_name, event_data = harvest_actions[current_idx]
+                logger.info(f"{harvest_id} Executing harvest action: {current_idx + 1}/{len(harvest_actions)}: {event_name}, {event_data}")
 
                 # Calculate and update progress (33% to 99%, distributed across actions)
-                progress = 33 + int((current_idx / len(HARVEST_ACTIONS)) * 66)
+                progress = 33 + int((current_idx / len(harvest_actions)) * 66)
                 progress = min(progress, 99)
 
                 with harvest_jobs_lock:
                     if harvest_id in harvest_jobs and harvest_jobs[harvest_id]['state'] == 'harvesting':
                         harvest_jobs[harvest_id]['progress'] = progress
                         harvest_jobs[harvest_id]['current_action_index'] = current_idx
-                        logger.info(f"{harvest_id} Progress: {progress}% (action {current_idx + 1}/{len(HARVEST_ACTIONS)})")
+                        logger.info(f"{harvest_id} Progress: {progress}% (action {current_idx + 1}/{len(harvest_actions)})")
 
                 # Increment action index for next iteration
                 action_state['current_index'] = current_idx + 1
@@ -294,16 +296,16 @@ def initiate_harvest(harvest_id):
 
                 # Register callback for this specific action's response
                 if current_idx > 0:
-                    previous_event_name, _ = HARVEST_ACTIONS[current_idx - 1]
+                    previous_event_name, _ = harvest_actions[current_idx - 1]
                     previous_response_event = previous_event_name.split(':')[0] + ':response'
-                    iot_client.unregister_response_callback(previous_response_event)
-                if current_idx + 1 >= len(HARVEST_ACTIONS): # last action is completed
-                    iot_client.register_response_callback(response_event, on_harvesting_complete)
+                    iot_client_harvest.unregister_response_callback(previous_response_event)
+                if current_idx + 1 >= len(harvest_actions): # last action is completed
+                    iot_client_harvest.register_response_callback(response_event, on_harvesting_complete)
                 else:
-                    iot_client.register_response_callback(response_event, execute_next_action)
+                    iot_client_harvest.register_response_callback(response_event, execute_next_action)
 
                 # Emit the event
-                response = iot_client.emit_event(event_name, event_data)
+                response = iot_client_harvest.emit_event(event_name, event_data)
                 logger.info(f"{harvest_id} Emitted {event_name} with response: {response}")
 
             # Start the event-driven chain by executing the first action
@@ -320,11 +322,11 @@ def initiate_harvest(harvest_id):
             # No progress updates needed for cleanup - just finalizing
 
             # Register callback for completion
-            iot_client.unregister_response_callback('pole_servo:response')
-            iot_client.register_response_callback('needle_servo:response', on_cleanup_complete)
+            iot_client_harvest.unregister_response_callback('pole_servo:response')
+            iot_client_harvest.register_response_callback('needle_servo:response', on_cleanup_complete)
 
             # Emit event to IoT device for cleanup (return to home position)
-            response = iot_client.emit_event('needle_servo:angle', {'angle': -90, 'state': 'cleanup'})
+            response = iot_client_harvest.emit_event('needle_servo:angle', {'angle': -90, 'state': 'cleanup'})
             logger.info(f"Emitted event with response: {response}")
 
         def execute_completed():
@@ -340,8 +342,8 @@ def initiate_harvest(harvest_id):
                 logger.info(f"{harvest_id} simulation completed")
 
             # Cleanup
-            iot_client.unregister_response_callback('needle_servo:response')
-            iot_client.close()
+            iot_client_harvest.unregister_response_callback('needle_servo:response')
+            iot_client_harvest.close()
 
             # Save the harvested metrics
             base_value = DATA_COLLECTION_METRICS['honey_harvested']['base_value']
@@ -373,7 +375,8 @@ def initiate_harvest(harvest_id):
 
         # Cleanup on error
         try:
-            iot_client.close()
+            iot_client_harvest.close()
+            iot_client_data_collection.close()
         except:
             pass
 
