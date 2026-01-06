@@ -81,7 +81,7 @@ def upload_image():
     """
     Endpoint to receive an image file via POST request.
     Expects a multipart/form-data request with an 'image' file.
-    Stores the image as binary data in the MongoDB 'images' collection.
+    Stores the image as binary data in the MongoDB 'images' collection and saves to local disk.
     """
     logger.info(f"Received POST request to /api/upload-image from {request.remote_addr}")
 
@@ -101,8 +101,21 @@ def upload_image():
         return jsonify({'error': 'Unsupported file type. Allowed: png, jpg, jpeg, gif'}), 400
 
     try:
-        # Read image as binary
+        import os
+
+        # Create images directory if it doesn't exist
+        images_dir = 'uploaded_images'
+        os.makedirs(images_dir, exist_ok=True)
+
+        # Save to local disk
+        filepath = os.path.join(images_dir, image_file.filename)
+        image_file.save(filepath)
+        logger.info(f"Successfully saved image {image_file.filename} to {filepath}")
+
+        # Read image as binary for MongoDB
+        image_file.seek(0) # Reset file pointer after saving
         image_data = image_file.read()
+
         # Create document with image data and metadata
         image_doc = {
             'filename': image_file.filename,
