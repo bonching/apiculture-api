@@ -44,6 +44,7 @@ HARVEST_ACTIONS = [
     ('pole_servo:angle', {'angle': 150, 'state': 'harvesting'}),
     ('slider_servo:rotate', {'direction': 'forward', 'duration': 10, 'state': 'harvesting'}),
     ('extruder_servo:rotate', {'direction': 'extend', 'duration': 5, 'state': 'harvesting'}),
+    ('pump:control', {'action': 'on', 'duration': 5, 'state': 'harvesting'}),
     ('extruder_servo:rotate', {'direction': 'retract', 'duration': 5, 'state': 'harvesting'}),
     ('slider_servo:rotate', {'direction': 'backward', 'duration': 10, 'state': 'harvesting'}),
     ('pole_servo:angle', {'angle': -150, 'state': 'harvesting'})
