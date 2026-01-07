@@ -178,7 +178,7 @@ def initiate_harvest(harvest_id):
             iot_client_harvest.unregister_response_callback('needle_servo:response')
             iot_client_harvest.register_response_callback('smoker:response', on_starting_smoker_complete)
 
-            response = iot_client_harvest.emit_event('smoker:control', {'action': 'on', 'duration': 5, 'state': 'starting_smoker'})
+            response = iot_client_harvest.emit_event('smoker:control', {'action': 'on', 'duration': 2, 'state': 'starting_smoker'})
             logger.info(f"Emitted event with response: {response}")
 
         def execute_capturing_images():

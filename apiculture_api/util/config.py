@@ -4,7 +4,7 @@ API_PORT = 8081
 
 # IOT Socket.IO Configuration
 IOT_HARVEST_WEBSOCKET_URL = 'http://192.168.68.117:5000'
-IOT_DATA_COLLECTION_WEBSOCKET_URL = 'http://192.168.68.111:5000'
+IOT_DATA_COLLECTION_WEBSOCKET_URL = 'http://192.168.68.101:5000'
 IOT_CONNECTION_TIMEOUT = 5
 IOT_SIMULATE_MODE = False # Enable simulation mode (No actual IoT connection required)
 
@@ -44,7 +44,7 @@ HARVEST_ACTIONS = [
     ('pole_servo:angle', {'angle': 150, 'state': 'harvesting'}),
     ('slider_servo:rotate', {'direction': 'forward', 'duration': 10, 'state': 'harvesting'}),
     ('extruder_servo:rotate', {'direction': 'extend', 'duration': 5, 'state': 'harvesting'}),
-    ('pump:control', {'action': 'on', 'duration': 5, 'state': 'harvesting'}),
+    ('pump:control', {'action': 'on', 'duration': 2, 'state': 'harvesting'}),
     ('extruder_servo:rotate', {'direction': 'retract', 'duration': 5, 'state': 'harvesting'}),
     ('slider_servo:rotate', {'direction': 'backward', 'duration': 10, 'state': 'harvesting'}),
     ('pole_servo:angle', {'angle': -150, 'state': 'harvesting'})
