@@ -100,6 +100,11 @@ def upload_image():
         logger.warning(f"Unsupported file type for {image_file.filename}")
         return jsonify({'error': 'Unsupported file type. Allowed: png, jpg, jpeg, gif'}), 400
 
+    data = request.data
+    if data is None:
+        data = {}
+    context = data.get('context', None)
+
     try:
         import os
 
@@ -123,14 +128,19 @@ def upload_image():
             'content_type': image_file.content_type,
             'upload_time': datetime.now(timezone.utc)
         }
+        if context is not None:
+            image_doc['context'] = context
+
         # Insert into MongoDB
         result = mongo.image_collection.insert_one(image_doc)
         logger.info(f"Successfully saved image {image_file.filename} with ID: {result.inserted_id}")
-        return jsonify({
+        response = {
             'message': 'Image uploaded successfully',
             'inserted_id': str(result.inserted_id),
             'filename': image_file.filename
-        }), 201
+        }
+
+        return jsonify(response), 201
     except Exception as e:
         logger.error(f"Failed to save image: {str(e)}")
         return jsonify({'error': f'Failed to save image: {str(e)}'}), 500
