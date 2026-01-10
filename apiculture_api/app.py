@@ -100,10 +100,7 @@ def upload_image():
         logger.warning(f"Unsupported file type for {image_file.filename}")
         return jsonify({'error': 'Unsupported file type. Allowed: png, jpg, jpeg, gif'}), 400
 
-    data = request.data
-    if data is None:
-        data = {}
-    context = data.get('context', None)
+    context = request.form.get('context')
 
     try:
         import os
@@ -139,6 +136,9 @@ def upload_image():
             'inserted_id': str(result.inserted_id),
             'filename': image_file.filename
         }
+
+        if context == 'defense':
+            response['run_sprinkler'] = 'Y'
 
         return jsonify(response), 201
     except Exception as e:
