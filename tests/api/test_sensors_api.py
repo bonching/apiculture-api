@@ -93,9 +93,9 @@ class TestSensorsApi(unittest.TestCase):
                 {
                     '_id': "693b4c90943e75b9d619e110",
                     'name': "Bosch BME280 Env Sensor",
-                    'dataCapture': ["temperature", "humidity", "co2"],
+                    'dataCapture': ["temperature", "humidity", "co2", "barometric_pressure"],
                     'status': "online",
-                    'currentValue': "33.8°C, 62%, 410ppm",
+                    'currentValue': "33.8°C, 62%, 410ppm, 1013hPa",
                     'beehiveId': "693ad7c84739d5289a1e0834",
                     'hiveLocation': "honey_super",
                     'active': True,
