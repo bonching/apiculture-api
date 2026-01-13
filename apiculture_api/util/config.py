@@ -1,5 +1,5 @@
 MONGODB_URL = 'mongodb://localhost:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=apiculture'
-API_HOST = '192.168.68.106'
+API_HOST = '172.20.10.5'
 API_PORT = 8081
 
 # IOT Socket.IO Configuration
