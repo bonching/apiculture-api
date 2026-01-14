@@ -1,10 +1,18 @@
-MONGODB_URL = 'mongodb://localhost:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=apiculture'
-API_HOST = '172.20.10.5'
+
+API_HOST = '192.168.68.104'
 API_PORT = 8081
 
+IOT_HARVEST_HOST = '192.168.68.117'
+IOT_HARVEST_PORT = 5000
+
+IOT_DATA_COLLECTION_HOST = '192.168.68.101'
+IOT_DATA_COLLECTION_PORT = 5000
+
+MONGODB_URL = 'mongodb://localhost:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=apiculture'
+
 # IOT Socket.IO Configuration
-IOT_HARVEST_WEBSOCKET_URL = 'http://192.168.68.117:5000'
-IOT_DATA_COLLECTION_WEBSOCKET_URL = 'http://192.168.68.101:5000'
+IOT_HARVEST_WEBSOCKET_URL = f'http://{IOT_HARVEST_HOST}:{IOT_HARVEST_PORT}'
+IOT_DATA_COLLECTION_WEBSOCKET_URL = f'http://{IOT_DATA_COLLECTION_HOST}:{IOT_DATA_COLLECTION_PORT}'
 IOT_CONNECTION_TIMEOUT = 5
 IOT_SIMULATE_MODE = False # Enable simulation mode (No actual IoT connection required)
 
