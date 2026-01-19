@@ -19,6 +19,7 @@ from apiculture_api.util.task_runner import TaskRunner
 util = AppUtil()
 
 # ML / AI
+from apiculture_api.ai.predator_detector import analyze_predators
 from apiculture_api.ai.bee_counter import count_bees
 
 # Force stdout to UTF-8 FIRST
@@ -131,6 +132,17 @@ def upload_image():
         image_file.seek(0) # Reset file pointer after saving
         image_data = image_file.read()
 
+        # Run predator analysis only for defense context (before inserting, so we can store result too)
+        predator_result = None
+        if context == 'defense':
+            predator_result = analyze_predators(image_data, content_type=image_file.content_type)
+            logger.info(
+                "Predator analysis result: detected=%s confidence=%s predator=%s",
+                predator_result.predator_detected,
+                predator_result.confidence,
+                predator_result.predator
+            )
+
         # Create document with image data and metadata
         image_doc = {
             'filename': image_file.filename,
@@ -140,6 +152,14 @@ def upload_image():
         }
         if context is not None:
             image_doc['context'] = context
+        if predator_result is not None:
+            image_doc['predator_analysis'] = {
+                "predator_detected": bool(predator_result.predator_detected),
+                "confidence": float(predator_result.confidence),
+                "predator": predator_result.predator,
+                "details": predator_result.details,
+                "analyzed_at": datetime.now(timezone.utc)
+            }
 
         # Insert into MongoDB
         result = mongo.image_collection.insert_one(image_doc)
@@ -151,7 +171,11 @@ def upload_image():
         }
 
         if context == 'defense':
-            response['run_sprinkler'] = 'Y'
+            if predator_result is not None:
+                response['predator_analysis'] = image_doc['predator_analysis']
+
+            if predator_result and predator_result.predator_detected:
+                response['run_sprinkler'] = 'Y'
 
         # Run bee counting only for data collection context.
         bee_count_result = None
