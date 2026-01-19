@@ -25,7 +25,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s:%(lineno)d - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('apiculture-api.log'),
+        logging.FileHandler('apiculture-api.log', encoding='utf-8'),
         logging.StreamHandler(sys.stdout)
     ],
     encoding='utf-8'
@@ -73,7 +73,7 @@ class DataCollectionSimulator:
             if has_anomaly:
                 # Generate anomaly: value outside base_value +/- variance
                 # Randomly choose to go above or below the normal range
-                direction = 1 if random.random() < 0.5 else -1
+                direction = 1 if random.random() > 0.5 else -1
                 # Add extra deviation beyond the variance (1.5 to 3 times variance)
                 anomaly_factor = random.uniform(1.5, 3.0)
                 value = round((base_value + (direction * variance * anomaly_factor)) * 10) / 10
@@ -89,9 +89,9 @@ class DataCollectionSimulator:
                 }
             ]
             if has_anomaly:
-                logger.info(f"Sensor reading {str(data_type)} with anomaly: {str(data)}")
+                logger.info(f"Sensor reading {str(data_type['data_type'])} with anomaly: {str(data)}")
             else:
-                logger.info(f"Sensor reading {str(data_type)} within the expected threshold: {str(data)}")
+                logger.info(f"Sensor reading {str(data_type['data_type'])} within the expected threshold: {str(data)}")
             response = requests.post(f'http://{API_HOST}:{API_PORT}/api/metrics', json=data)
             logger.info(response.json())
 

@@ -1,7 +1,7 @@
 import unittest
 from datetime import datetime, timezone
 
-from apiculture_api.app import app
+from apiculture_api.app import app, mongo
 import json
 
 
@@ -61,8 +61,8 @@ class TestApicultureApi(unittest.TestCase):
         self.assertIn('error', data)
         self.assertEqual(data['error'], 'No data provided')
 
-    def test_bee_counter_upload_image(self):
-        """Test POST request to /api/images endpoint with bee image counting."""
+    def test_bee_counter_image_upload(self):
+        """Test POST request to /api/images endpoint with bee image for counting."""
         import os
         from apiculture_api.util.mongo_client import ApicultureMongoClient
         from apiculture_api.util.app_util import AppUtil
@@ -82,7 +82,7 @@ class TestApicultureApi(unittest.TestCase):
             response = self.app.post(
                 '/api/images',
                 data={
-                    'image': (image_file, '1.jpg', 'image/jpeg'),
+                    'image': (image_file, 'bee.jpg', 'image/jpeg'),
                     'context': 'data_collection',
                     'sensorId': ''
                 },
@@ -91,7 +91,7 @@ class TestApicultureApi(unittest.TestCase):
 
             data = json.loads(response.data)
 
-            # Assert successfully uploaded
+            # Assert successfully upload
             self.assertEqual(response.status_code, 201)
             self.assertIn('message', data)
             self.assertEqual(data['message'], 'Image uploaded successfully')
