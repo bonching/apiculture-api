@@ -17,15 +17,19 @@ metrics_api = Blueprint("metrics_api", __name__)
 from apiculture_api.util.mongo_client import ApicultureMongoClient
 mongo = ApicultureMongoClient()
 
+# Force stdout to UTF-8 FIRST
+if sys.platform == 'win32':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_buffering=True)
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', line_buffering=True)
+
 import logging
-stream_handler = logging.StreamHandler()
-stream_handler.setStream(open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1))
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s:%(lineno)d - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler('../apiculture-api.log'),
-        stream_handler
+        logging.StreamHandler(sys.stdout)
     ],
     encoding='utf-8'
 )

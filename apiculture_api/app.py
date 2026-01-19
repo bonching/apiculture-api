@@ -18,6 +18,9 @@ from apiculture_api.util.task_runner import TaskRunner
 
 util = AppUtil()
 
+# ML / AI
+from apiculture_api.ai.bee_counter import count_bees
+
 # Force stdout to UTF-8 FIRST
 if sys.platform == 'win32':
     import io
@@ -109,9 +112,11 @@ def upload_image():
         return jsonify({'error': 'Unsupported file type. Allowed: png, jpg, jpeg, gif'}), 400
 
     context = request.form.get('context')
+    sensor_id = request.form.get('sensor_id')
 
     try:
         import os
+        import requests
 
         # Create images directory if it doesn't exist
         images_dir = 'uploaded_images'
@@ -147,6 +152,45 @@ def upload_image():
 
         if context == 'defense':
             response['run_sprinkler'] = 'Y'
+
+        # Run bee counting only for data collection context.
+        bee_count_result = None
+        if context == 'data_collection':
+            bee_count_result = count_bees(image_data, content_type=image_file.content_type)
+            logger.info(
+                "Bee count result: count=%s confidence=%s",
+                bee_count_result.bee_count,
+                bee_count_result.confidence
+            )
+
+            # Save bee count as a metric if sensor_id is provided.
+            if sensor_id and bee_count_result:
+                try:
+                    # Find the bee_count data_type for this sensor
+                    data_type = mongo.data_types_collection.find_one({
+                        "sensor_id": sensor_id,
+                        "data_type": "bee_count"
+                    })
+
+                    if data_type:
+                        # Post bee count to metrics endpoint
+                        metric_data = [{
+                            "datetime": datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
+                            "dataTypeId": util.objectid_to_str(data_type['_id']),
+                            "value": int(bee_count_result.bee_count)
+                        }]
+
+                        from apiculture_api.util.config import API_HOST, API_PORT
+                        metrics_response = requests.post(
+                            f'http://{API_HOST}:{API_PORT}/api/metrics',
+                            json=metric_data
+                        )
+                        logger.info(f"Bee count metric saved: {metrics_response.json()}")
+                    else:
+                        logger.warning(f"No bee_count data_type found for sensor {sensor_id}")
+                except Exception as e:
+                    logger.error(f"Failed to save bee count metric: {str(e)}")
+                    traceback.print_exc()
 
         return jsonify(response), 201
     except Exception as e:

@@ -64,6 +64,8 @@ class TestApicultureApi(unittest.TestCase):
     def test_bee_counter_upload_image(self):
         """Test POST request to /api/images endpoint with bee image counting."""
         import os
+        from apiculture_api.util.mongo_client import ApicultureMongoClient
+        from apiculture_api.util.app_util import AppUtil
 
         # Get the path to the test image
         image_path = os.path.join('images', 'bee', 'bee.jpg')
@@ -72,13 +74,17 @@ class TestApicultureApi(unittest.TestCase):
         if not os.path.exists(image_path):
             self.skipTest(f"Image {image_path} does not exist")
 
+        mongo = ApicultureMongoClient()
+        util = AppUtil()
+
         # Open and read the image file
         with open(image_path, 'rb') as image_file:
             response = self.app.post(
                 '/api/images',
                 data={
                     'image': (image_file, '1.jpg', 'image/jpeg'),
-                    'context': 'data_collection'
+                    'context': 'data_collection',
+                    'sensorId': ''
                 },
                 content_type='multipart/form-data'
             )
@@ -99,6 +105,12 @@ class TestApicultureApi(unittest.TestCase):
             self.assertIn('confidence', data['bee_count'])
             self.assertIsInstance(data['bee_count']['count'], int)
             self.assertIsInstance(data['bee_count']['confidence'], (int, float))
+
+            # Verify metric was saved to database
+            data_type_id = ''
+            metric = mongo.metrics.find_one({'data_type._id': data_type_id,}, sort=[('timestamp', -1)])
+            self.assertIsNotNone(metric, "Bee count metric not saved to database")
+            self.assertEqual(metric['value'], data['bee_count']['count'], "Metric value should match bee count result")
 
     def _generate_random_temperature(self):
         return {
