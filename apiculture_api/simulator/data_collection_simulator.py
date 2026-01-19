@@ -40,7 +40,8 @@ class DataCollectionSimulator:
             logger.info(f'data_types: {data_types}')
 
             for data_type in data_types:
-                tasks.append((self.generate_random_readings, (data_type,), DATA_COLLECTION_SIMULATION_FREQUENCY))
+                if data_type["data_type"] != "honey_harvested":
+                    tasks.append((self.generate_random_readings, (data_type,), DATA_COLLECTION_SIMULATION_FREQUENCY))
 
         runner = TaskRunner(tasks)
         time.sleep(60*60*24)
