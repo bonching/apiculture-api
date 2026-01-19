@@ -1,3 +1,4 @@
+import sys
 import traceback
 
 from flask import Flask, request, jsonify
@@ -17,13 +18,19 @@ from apiculture_api.util.task_runner import TaskRunner
 
 util = AppUtil()
 
+# Force stdout to UTF-8 FIRST
+if sys.platform == 'win32':
+    import io
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_buffering=True)
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', line_buffering=True)
+
 import logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s:%(lineno)d - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('apiculture-api.log'),
-        logging.StreamHandler()
+        logging.FileHandler('apiculture-api.log', encoding='utf-8'),
+        logging.StreamHandler(sys.stdout)
     ],
     encoding='utf-8'
 )

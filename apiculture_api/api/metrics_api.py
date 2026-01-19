@@ -1,3 +1,4 @@
+import sys
 import traceback
 from datetime import datetime, timezone
 
@@ -17,12 +18,14 @@ from apiculture_api.util.mongo_client import ApicultureMongoClient
 mongo = ApicultureMongoClient()
 
 import logging
+stream_handler = logging.StreamHandler()
+stream_handler.setStream(open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1))
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s:%(lineno)d - %(levelname)s - %(message)s',
     handlers=[
         logging.FileHandler('../apiculture-api.log'),
-        logging.StreamHandler()
+        stream_handler
     ],
     encoding='utf-8'
 )
