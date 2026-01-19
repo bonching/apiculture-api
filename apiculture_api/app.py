@@ -143,40 +143,6 @@ def upload_image():
                 predator_result.predator
             )
 
-        # Create document with image data and metadata
-        image_doc = {
-            'filename': image_file.filename,
-            'data': image_data,
-            'content_type': image_file.content_type,
-            'upload_time': datetime.now(timezone.utc)
-        }
-        if context is not None:
-            image_doc['context'] = context
-        if predator_result is not None:
-            image_doc['predator_analysis'] = {
-                "predator_detected": bool(predator_result.predator_detected),
-                "confidence": float(predator_result.confidence),
-                "predator": predator_result.predator,
-                "details": predator_result.details,
-                "analyzed_at": datetime.now(timezone.utc)
-            }
-
-        # Insert into MongoDB
-        result = mongo.image_collection.insert_one(image_doc)
-        logger.info(f"Successfully saved image {image_file.filename} with ID: {result.inserted_id}")
-        response = {
-            'message': 'Image uploaded successfully',
-            'inserted_id': str(result.inserted_id),
-            'filename': image_file.filename
-        }
-
-        if context == 'defense':
-            if predator_result is not None:
-                response['predator_analysis'] = image_doc['predator_analysis']
-
-            if predator_result and predator_result.predator_detected:
-                response['run_sprinkler'] = 'Y'
-
         # Run bee counting only for data collection context.
         bee_count_result = None
         if context == 'data_collection':
