@@ -211,10 +211,54 @@ def upload_image():
                         )
                         logger.info(f"Bee count metric saved: {metrics_response.json()}")
                     else:
-                        logger.warning(f"No bee_count data_type found for sensor {sensor_id}")
+                        logger.warning(f"No bee_count data_type found for sensor_id {sensor_id}")
                 except Exception as e:
                     logger.error(f"Failed to save bee count metric: {str(e)}")
                     traceback.print_exc()
+
+        # Create document with image data and metadata
+        image_doc = {
+            'filename': image_file.filename,
+            'data': image_data,
+            'content_type': image_file.content_type,
+            'upload_time': datetime.now(timezone.utc)
+        }
+        if context is not None:
+            image_doc['context'] = context
+        if predator_result is not None:
+            image_doc['predator_analysis'] = {
+                "predator_detected": bool(predator_result.predator_detected),
+                "confidence": float(predator_result.confidence),
+                "predator": predator_result.predator,
+                "details": predator_result.details,
+                "analyzed_at": datetime.now(timezone.utc)
+            }
+        if bee_count_result is not None:
+            image_doc['bee_count'] = {
+                'count': int(bee_count_result.bee_count),
+                'confidence': float(bee_count_result.confidence),
+                'details': bee_count_result.details,
+                'analyzed_at': datetime.now(timezone.utc)
+            }
+
+        # Insert into MongoDB
+        result = mongo.image_collection.insert_one(image_doc)
+        logger.info(f"Successfully saved image {image_file.filename} with ID: {result.inserted_id}")
+        response = {
+            'message': 'Image uploaded successfully',
+            'inserted_id': str(result.inserted_id),
+            'filename': image_file.filename
+        }
+
+        if predator_result is not None:
+            response['predator_analysis'] = image_doc['predator_analysis']
+
+        if bee_count_result is not None:
+            response['bee_count'] = image_doc['bee_count']
+
+        # Only run sprinkler when predator is detected.
+        if predator_result is not None and predator_result.predator_detected:
+            response['run_sprinkler'] = 'Y'
 
         return jsonify(response), 201
     except Exception as e:

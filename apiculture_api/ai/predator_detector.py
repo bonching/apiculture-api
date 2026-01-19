@@ -79,9 +79,9 @@ class PredatorDetector:
                 return PredatorDetectionResult(False, 0.0, None, {'reason': 'failed to decode image'})
 
             # Basic preprocessing; real model may need different scaling/size.
-            blob = cv2.dnn.blobFromImage(img, scalefactor=1 / 255.0, size=(224, 224), swapRB=True)
+            blob = cv2.dnn.blobFromImage(img, scalefactor=1.0 / 255.0, size=(224, 224), swapRB=True)
             self._net.setInput(blob)
-            out = self._net.forward()[0]
+            out = self._net.forward()
 
             # Interpret output as class scores
             scores = out.flatten()
@@ -92,7 +92,7 @@ class PredatorDetector:
             confidence = float(scores[class_id])
             label = self.labels.get(class_id)
 
-            predator_labels = {"wasp", "hornet", "bear", "skunk", "racoon", "bird"}
+            predator_labels = {"wasp", "hornet", "bear", "skunk", "raccoon", "bird"}
             predator_detected = (label in predator_labels) and confidence > 0.6
 
             return PredatorDetectionResult(
@@ -109,7 +109,7 @@ class PredatorDetector:
 _default_detector = PredatorDetector()
 
 
-def analyze_predators(image_bytes: bytes, content_type: Optional[str] = None) -> PredatorDetectionResult:
+def analyze_predators(image_bytes: bytes, *, content_type: Optional[str] = None) -> PredatorDetectionResult:
     """Convenience wrapper used by the API."""
 
     return _default_detector.analyze_image_bytes(image_bytes=image_bytes, content_type=content_type)
