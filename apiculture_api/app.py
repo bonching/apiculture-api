@@ -211,7 +211,7 @@ def upload_image():
                         )
                         logger.info(f"Bee count metric saved: {metrics_response.json()}")
                     else:
-                        logger.warning(f"No bee_count data_type found for sensor_id {sensor_id}")
+                        logger.warning(f"No bee_count data_type found for sensor_id: {sensor_id}")
                 except Exception as e:
                     logger.error(f"Failed to save bee count metric: {str(e)}")
                     traceback.print_exc()
@@ -227,11 +227,11 @@ def upload_image():
             image_doc['context'] = context
         if predator_result is not None:
             image_doc['predator_analysis'] = {
-                "predator_detected": bool(predator_result.predator_detected),
-                "confidence": float(predator_result.confidence),
-                "predator": predator_result.predator,
-                "details": predator_result.details,
-                "analyzed_at": datetime.now(timezone.utc)
+                'predator_detected': bool(predator_result.predator_detected),
+                'confidence': float(predator_result.confidence),
+                'predator': predator_result.predator,
+                'details': predator_result.details,
+                'analyzed_at': datetime.now(timezone.utc)
             }
         if bee_count_result is not None:
             image_doc['bee_count'] = {
@@ -256,7 +256,7 @@ def upload_image():
         if bee_count_result is not None:
             response['bee_count'] = image_doc['bee_count']
 
-        # Only run sprinkler when predator is detected.
+        # Only run sprinkler when a predator is actually detected.
         if predator_result is not None and predator_result.predator_detected:
             response['run_sprinkler'] = 'Y'
 

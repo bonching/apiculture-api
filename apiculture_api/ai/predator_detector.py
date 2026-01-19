@@ -93,7 +93,7 @@ class PredatorDetector:
             label = self.labels.get(class_id)
 
             predator_labels = {"wasp", "hornet", "bear", "skunk", "raccoon", "bird"}
-            predator_detected = (label in predator_labels) and confidence > 0.6
+            predator_detected = (label in predator_labels) and confidence >= 0.6
 
             return PredatorDetectionResult(
                 predator_detected=predator_detected,
