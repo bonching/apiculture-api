@@ -5,7 +5,7 @@ from pymongo import MongoClient
 
 from apiculture_api.util.config import MONGODB_URL
 
-# Force stdout to UTF-8 FIRST
+# Force stdout to UTF-8 on Windows
 if sys.platform == 'win32':
     import io
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_buffering=True)
@@ -15,7 +15,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s:%(lineno)d - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('../apiculture-api.log'),
+        logging.FileHandler('../apiculture-api.log', encoding='utf-8'),
         logging.StreamHandler(sys.stdout)
     ],
     encoding='utf-8'
