@@ -70,8 +70,17 @@ class DataCollectionSimulator:
             anomaly_rate = random.uniform(0.01, 100.00)
             has_anomaly = anomaly_rate < DATA_COLLECTION_METRICS[data_type['data_type']]['anomaly_rate']
 
-            seed = (random.random() - 0.5)
-            value = round((base_value + (seed * variance) + (2 * variance if has_anomaly else 0)) * 10) / 10
+            if has_anomaly:
+                # Generate anomaly: value outside base_value +/- variance
+                # Randomly choose to go above or below the normal range
+                direction = 1 if random.random() < 0.5 else -1
+                # Add extra deviation beyond the variance (1.5 to 3 times variance)
+                anomaly_factor = random.uniform(1.5, 3.0)
+                value = round((base_value + (direction * variance * anomaly_factor)) * 10) / 10
+            else:
+                # Normal reading: value within base_value +/- variance
+                seed = (random.random() - 0.5) * 2 # Range: -1 to 1
+                value = round((base_value + (seed * variance)) * 10) / 10
             data = [
                 {
                     'datetime': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
@@ -80,9 +89,9 @@ class DataCollectionSimulator:
                 }
             ]
             if has_anomaly:
-                logger.info(f"Sensor reading within the expected threshold: {str(data_type)}")
+                logger.info(f"Sensor reading {str(data_type)} with anomaly: {str(data)}")
             else:
-                logger.info(f"Sensor reading with anomaly: {str(data_type)}")
+                logger.info(f"Sensor reading {str(data_type)} within the expected threshold: {str(data)}")
             response = requests.post(f'http://{API_HOST}:{API_PORT}/api/metrics', json=data)
             logger.info(response.json())
 

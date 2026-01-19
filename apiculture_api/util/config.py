@@ -22,7 +22,7 @@ IDLE_TIME_TO_MARK_SENSOR_AS_OFFLINE = 60 * 6
 DATA_COLLECTION_SIMULATION_FREQUENCY = 60 * 5
 
 DATA_COLLECTION_METRICS = {
-    'temperature': { 'base_value': 34.5, 'variance': 2, 'unit': '°C', 'anomaly_rate': 3 },
+    'temperature': { 'base_value': 34.5, 'variance': 2, 'unit': '°C', 'anomaly_rate': 20 },
     'humidity': { 'base_value': 58, 'variance': 5, 'unit': '%', 'anomaly_rate': 1 },
     'co2': { 'base_value': 420, 'variance': 30, 'unit': 'ppm', 'anomaly_rate': 1 },
     'voc': { 'base_value': 2.1, 'variance': 0.3, 'unit': 'kΩ', 'anomaly_rate': 1 },
