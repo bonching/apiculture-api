@@ -20,3 +20,21 @@ python -m unittest discover tests
 ```bash
 python -m apiculture_api.app
 ```
+
+```commandline
+set PYTHONPATH=%CD%
+python apiculture_api/app.py
+```
+
+
+4. Run the simulators
+```bash
+python -m apiculture_api.simulator.data_collection_simulator
+python -m apiculture_api.simulator.harvest_simulator
+```
+
+```commandline
+set PYTHONPATH=%CD%
+python apiculture_api/simulator/data_collection_simulator.py
+python apiculture_api/simulator/harvest_simulator.py
+```
