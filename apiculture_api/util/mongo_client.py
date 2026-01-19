@@ -9,7 +9,8 @@ logging.basicConfig(
     handlers=[
         logging.FileHandler('../apiculture-api.log'),
         logging.StreamHandler()
-    ]
+    ],
+    encoding='utf-8'
 )
 logger = logging.getLogger('mongo_client')
 logger.setLevel(logging.INFO)

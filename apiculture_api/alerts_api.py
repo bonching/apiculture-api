@@ -21,7 +21,8 @@ logging.basicConfig(
     handlers=[
         logging.FileHandler('apiculture-api.log'),
         logging.StreamHandler()
-    ]
+    ],
+    encoding='utf-8'
 )
 logger = logging.getLogger('alerts_api')
 logger.setLevel(logging.INFO)

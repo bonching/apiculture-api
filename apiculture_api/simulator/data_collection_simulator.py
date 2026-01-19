@@ -20,7 +20,8 @@ logging.basicConfig(
     handlers=[
         logging.FileHandler('apiculture-api.log'),
         logging.StreamHandler()
-    ]
+    ],
+    encoding='utf-8'
 )
 logger = logging.getLogger('data_collection_simulator')
 logger.setLevel(logging.INFO)

@@ -20,7 +20,8 @@ logging.basicConfig(
     handlers=[
         logging.FileHandler('../apiculture-api.log'),
         logging.StreamHandler()
-    ]
+    ],
+    encoding='utf-8'
 )
 logger = logging.getLogger('sensors_api')
 logger.setLevel(logging.INFO)
