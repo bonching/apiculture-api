@@ -104,8 +104,20 @@ def save_metrics(data):
 @metrics_api.route('/api/metrics/<beehive_id>/<data_capture>', methods=['GET'])
 def get_metrics(beehive_id, data_capture):
     try:
-        sensors = list(mongo.sensors_collection.find({ "beehive_id": beehive_id, "data_capture": data_capture}))
-        data_type = mongo.data_types_collection.find_one({"sensor_id": util.objectid_to_str(sensors[0]["_id"]), "data_type": data_capture})
+        sensors = list(mongo.sensors_collection.find({ "beehive_id": beehive_id, "data_capture": util.camel_to_snake(data_capture)}))
+
+        # Return empty data if no sensors found
+        if not sensors:
+            logger.warning(f"No sensors found for beehive_id: {beehive_id}, data_capture: {data_capture}")
+            return jsonify({'data': []}), 200
+
+        data_type = mongo.data_types_collection.find_one({"sensor_id": util.objectid_to_str(sensors[0]["_id"]), "data_type": util.camel_to_snake(data_capture)})
+
+        # Return empty data if no sensors found
+        if not data_type:
+            logger.warning(f"No data_type found for sensor_id: {util.objectid_to_str(sensors[0]['_id'])}, data_capture: {data_capture}")
+            return jsonify({'data': []}), 200
+
         data_type_id = util.objectid_to_str(data_type["_id"])
 
         pipeline = [
@@ -179,4 +191,5 @@ def get_metrics(beehive_id, data_capture):
         return jsonify({'data': metrics}), 200
     except Exception as e:
         logger.error(f"Failed to get metrics: {str(e)}")
+        traceback.print_exc()
         return jsonify({'error': f'Failed to get metrics: {str(e)}'}), 500
