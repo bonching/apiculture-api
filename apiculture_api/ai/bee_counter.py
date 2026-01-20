@@ -9,9 +9,9 @@ class BeeCountResult:
     """Result of bee counting.
 
     Contract:
-      - bee_count: estimated number of bees in the image (>= 0)
+      - bee_count: estimated number of bees visible in the image (>= 0)
       - confidence: 0..1 heuristic confidence of the estimate.
-      - details: extra metadata useful for debugging.
+      - details: optional debug metadata (e.g., algorithm used)
 
     This implementation is dependency-light and works without heavy ML libraries.
     If OpenCV is available, it uses a simple blob detection heuristic.
@@ -24,7 +24,7 @@ class BeeCountResult:
 
 
 class BeeCounter:
-    """Counts bees in images.
+    """Counts bees in an image.
 
     Implementation strategy:
       1) If OpenCV is available, decode the image and run a simple blob detector on edges.
@@ -50,7 +50,7 @@ class BeeCounter:
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             gray = cv2.GaussianBlur(gray, (5, 5), 0)
 
-            # Edge map; bees tend to have high frequency features.
+            # Edge map; bees tend to have high-frequency features.
             edges = cv2.Canny(gray, 50, 150)
 
             # Close gaps so we get blob-like components.
@@ -72,7 +72,7 @@ class BeeCounter:
             keypoints = detector.detect(closed)
 
             # Clamp to sane range and compute a simple confidence heuristic.
-            count = max(0, len(keypoints))
+            count = max(0, int(len(keypoints)))
             # Confidence rises with count up to a cap; overall heuristic.
             confidence = float(min(0.9, 0.3 + (count / 200.0))) if count > 0 else 0.2
 
@@ -89,7 +89,7 @@ class BeeCounter:
             # OpenCV missing or processing failed.
             return BeeCountResult(
                 bee_count=0,
-                confidence=0,
+                confidence=0.0,
                 details={
                     "reason": "analysis failed",
                     "content_type": content_type,
