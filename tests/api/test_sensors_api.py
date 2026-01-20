@@ -175,7 +175,7 @@ class TestSensorsApi(unittest.TestCase):
                     'hiveLocation': "external",
                     'active': True,
                     'simulate': True,
-                    'systems': ["data_collection"]
+                    'systems': ["defense"]
                 }
             ]),
             content_type='application/json'
