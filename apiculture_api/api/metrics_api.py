@@ -17,11 +17,19 @@ metrics_api = Blueprint("metrics_api", __name__)
 from apiculture_api.util.mongo_client import ApicultureMongoClient
 mongo = ApicultureMongoClient()
 
-# Force stdout to UTF-8 on Windows
+# Force stdout to UTF-8 on Windows (only if not already configured)
 if sys.platform == 'win32':
     import io
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_buffering=True)
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', line_buffering=True)
+    if not isinstance(sys.stdout, io.TextIOWrapper) or sys.stdout.encoding.lower() != 'utf-8':
+        try:
+            sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', line_buffering=True)
+        except (AttributeError, ValueError):
+            pass # Already wrapped or not available
+    if not isinstance(sys.stderr, io.TextIOWrapper) or sys.stderr.encoding.lower() != 'utf-8':
+        try:
+            sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', line_buffering=True)
+        except (AttributeError, ValueError):
+            pass # Already wrapped or not available
 
 import logging
 logging.basicConfig(
