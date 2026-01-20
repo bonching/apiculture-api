@@ -1,3 +1,4 @@
+import random
 import unittest
 from datetime import datetime, timezone
 
@@ -124,6 +125,80 @@ class TestApicultureApi(unittest.TestCase):
             )
             self.assertIsNotNone(metric, "Bee count metric should be saved to database")
             self.assertEqual(metric['value'], data['bee_count']['count'], "Metric value should match bee count result")
+
+    def test_defense_image_upload(self):
+        """Test POST request to /api/images endpoint with image for predator analysis."""
+        import os
+        from apiculture_api.util.mongo_client import ApicultureMongoClient
+        from apiculture_api.util.app_util import AppUtil
+
+        # Get path to bee_predators folder
+        predators_folder = os.path.join('images', 'bee_predators')
+
+        # Check if folder exists
+        if not os.path.exists(predators_folder):
+            self.skipTest(f"Folder {predators_folder} does not exist")
+
+        # Get all image files in the folder
+        image_files = [f for f in os.listdir(predators_folder)
+                       if f.lower().endswith(('.jpg', '.jpeg', '.png', '.gif'))]
+
+        if not image_files:
+            self.skipTest(f"No image files found in {predators_folder}")
+
+        # Randomly select an image
+        selected_image = random.choice(image_files)
+        image_path = os.path.join(predators_folder, selected_image)
+
+        print(f"Testing with randomly selected image: {selected_image}")
+
+        # Determine content type based on file extension
+        ext = selected_image.lower().rsplit('.',1)[-1]
+        content_type_map = {
+            'jpg': 'image/jpeg',
+            'jpeg': 'image/jpeg',
+            'png': 'image/png',
+            'gif': 'image/gif'
+        }
+        content_type = content_type_map.get(ext, 'image/jpeg')
+
+        # Open and read the image file
+        with open(image_path, 'rb') as img_file:
+            response = self.app.post(
+                '/api/images',
+                data={
+                    'image': (img_file, selected_image, content_type),
+                    'context': 'defense'
+                },
+                content_type='multipart/form-data'
+            )
+
+        data = json.loads(response.data)
+
+        # Assert successful upload
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('message', data)
+        self.assertEqual(data['message'], 'Image uploaded successfully')
+        self.assertIn('inserted_id', data)
+        self.assertIn('filename', data)
+        self.assertEqual(data['filename'], selected_image)
+
+        # Assert predator analysis result is present
+        self.assertIn('predator_analysis', data)
+        self.assertIn('predator_detected', data['predator_analysis'])
+        self.assertIn('confidence', data['predator_analysis'])
+        self.assertIn('predator', data['predator_analysis'])
+        self.assertIsInstance(data['predator_analysis']['predator_detected'], bool)
+        self.assertGreater(data['predator_analysis']['confidence'], (int, float))
+
+        # If predator is detected, run_sprinkler should be 'Y'
+        if data['predator_analysis']['predator_detected']:
+            self.assertIn('run_sprinkler', data)
+            self.assertEqual(data['run_sprinkler'], 'Y')
+            print(f"Predator detected: {data['predator_analysis']['predator']} "
+                  f"with confidence {data['predator_analysis']['confidence']}")
+        else:
+            print(f"No predator detected (confidence: {data['predator_analysis']['confidence']})")
 
     def _generate_random_temperature(self):
         return {
