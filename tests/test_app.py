@@ -89,11 +89,11 @@ class TestApicultureApi(unittest.TestCase):
             self.skipTest("bee_count data_type not found for sensor")
 
         # Open and read the image file
-        with open(image_path, 'rb') as image_file:
+        with open(image_path, 'rb') as img_file:
             response = self.app.post(
                 '/api/images',
                 data={
-                    'image': (image_file, 'bee.jpg', 'image/jpeg'),
+                    'image': (img_file, 'bee.jpg', 'image/jpeg'),
                     'context': 'data_collection',
                     'sensor_id': sensor_id
                 },
