@@ -194,6 +194,7 @@ def upload_image():
         image_doc = {
             'filename': image_file.filename,
             'data': image_data,
+            'sensor_id': sensor_id,
             'content_type': image_file.content_type,
             'upload_time': datetime.now(timezone.utc)
         }

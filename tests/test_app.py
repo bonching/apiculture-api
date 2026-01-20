@@ -77,6 +77,8 @@ class TestApicultureApi(unittest.TestCase):
         mongo = ApicultureMongoClient()
         util = AppUtil()
 
+        sensor_id = '693b4c90943e75b9d619e11b'
+
         # Open and read the image file
         with open(image_path, 'rb') as image_file:
             response = self.app.post(
@@ -84,7 +86,7 @@ class TestApicultureApi(unittest.TestCase):
                 data={
                     'image': (image_file, 'bee.jpg', 'image/jpeg'),
                     'context': 'data_collection',
-                    'sensorId': ''
+                    'sensorId': sensor_id
                 },
                 content_type='multipart/form-data'
             )
