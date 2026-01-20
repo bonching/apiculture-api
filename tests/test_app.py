@@ -79,6 +79,14 @@ class TestApicultureApi(unittest.TestCase):
 
         sensor_id = '693b4c90943e75b9d619e11b'
 
+        # Verify bee_count data type exists
+        data_type = mongo.data_types_collection.find_one({
+            'sensor_id': sensor_id,
+            'data_type': 'bee_count'
+        })
+        if not data_type:
+            self.skipTest("bee_count data_type not found for sensor")
+
         # Open and read the image file
         with open(image_path, 'rb') as image_file:
             response = self.app.post(
@@ -86,20 +94,20 @@ class TestApicultureApi(unittest.TestCase):
                 data={
                     'image': (image_file, 'bee.jpg', 'image/jpeg'),
                     'context': 'data_collection',
-                    'sensorId': sensor_id
+                    'sensor_id': sensor_id
                 },
                 content_type='multipart/form-data'
             )
 
             data = json.loads(response.data)
 
-            # Assert successfully upload
+            # Assert successful upload
             self.assertEqual(response.status_code, 201)
             self.assertIn('message', data)
             self.assertEqual(data['message'], 'Image uploaded successfully')
             self.assertIn('inserted_id', data)
             self.assertIn('filename', data)
-            self.assertEqual(data['filename'], '1.jpg')
+            self.assertEqual(data['filename'], 'bee.jpg')
 
             # Assert bee count result is present
             self.assertIn('bee_count', data)
@@ -109,9 +117,12 @@ class TestApicultureApi(unittest.TestCase):
             self.assertIsInstance(data['bee_count']['confidence'], (int, float))
 
             # Verify metric was saved to database
-            data_type_id = ''
-            metric = mongo.metrics.find_one({'data_type._id': data_type_id,}, sort=[('timestamp', -1)])
-            self.assertIsNotNone(metric, "Bee count metric not saved to database")
+            data_type_id = util.objectid_to_str(data_type['_id'])
+            metric = mongo.metrics_collection.find_one(
+                {'data_type_id': data_type_id,},
+                sort=[('datetime', -1)] # Get most recent
+            )
+            self.assertIsNotNone(metric, "Bee count metric should be saved to database")
             self.assertEqual(metric['value'], data['bee_count']['count'], "Metric value should match bee count result")
 
     def _generate_random_temperature(self):
