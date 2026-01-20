@@ -342,7 +342,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': None,
                     'hiveLocation': "external",
                     'active': True,
-                    'simulate': False,
+                    'simulate': True,
                     'systems': ["harvesting"]
                 },
                 {
