@@ -113,9 +113,9 @@ def get_metrics(beehive_id, data_capture):
 
         data_type = mongo.data_types_collection.find_one({"sensor_id": util.objectid_to_str(sensors[0]["_id"]), "data_type": util.camel_to_snake(data_capture)})
 
-        # Return empty data if no sensors found
+        # Return empty data if no data_type found
         if not data_type:
-            logger.warning(f"No data_type found for sensor_id: {util.objectid_to_str(sensors[0]['_id'])}, data_capture: {data_capture}")
+            logger.warning(f"No data_type found for sensor_id: {util.objectid_to_str(sensors[0]['_id'])}, data_capture: {util.camel_to_snake(data_capture)}")
             return jsonify({'data': []}), 200
 
         data_type_id = util.objectid_to_str(data_type["_id"])
