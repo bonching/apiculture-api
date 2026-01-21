@@ -1,8 +1,7 @@
-import random
 import unittest
 from datetime import datetime, timezone
 
-from apiculture_api.app import app, mongo
+from apiculture_api.app import app
 import json
 
 
@@ -124,7 +123,7 @@ class TestApicultureApi(unittest.TestCase):
             sort=[('datetime', -1)] # Get most recent
         )
         self.assertIsNotNone(metric, "Bee count metric should be saved to database")
-        self.assertEqual(metric['value'], data['bee_count']['count'], "Metric value should match bee count result")
+        self.assertEqual(metric['value'], data['bee_count']['count'], "Metric value should match bee count")
 
     def test_defense_image_upload(self):
         """Test POST request to /api/images endpoint with image for predator analysis."""
@@ -190,7 +189,7 @@ class TestApicultureApi(unittest.TestCase):
         self.assertIn('confidence', data['predator_analysis'])
         self.assertIn('predator', data['predator_analysis'])
         self.assertIsInstance(data['predator_analysis']['predator_detected'], bool)
-        self.assertGreater(data['predator_analysis']['confidence'], (int, float))
+        self.assertIsInstance(data['predator_analysis']['confidence'], (int, float))
 
         # If predator is detected, run_sprinkler should be 'Y'
         if data['predator_analysis']['predator_detected']:
