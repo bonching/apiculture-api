@@ -129,6 +129,7 @@ class TestApicultureApi(unittest.TestCase):
     def test_defense_image_upload(self):
         """Test POST request to /api/images endpoint with image for predator analysis."""
         import os
+        import random
         from apiculture_api.util.mongo_client import ApicultureMongoClient
         from apiculture_api.util.app_util import AppUtil
 
