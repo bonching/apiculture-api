@@ -102,29 +102,29 @@ class TestApicultureApi(unittest.TestCase):
 
             data = json.loads(response.data)
 
-            # Assert successful upload
-            self.assertEqual(response.status_code, 201)
-            self.assertIn('message', data)
-            self.assertEqual(data['message'], 'Image uploaded successfully')
-            self.assertIn('inserted_id', data)
-            self.assertIn('filename', data)
-            self.assertEqual(data['filename'], 'bee.jpg')
+        # Assert successful upload
+        self.assertEqual(response.status_code, 201)
+        self.assertIn('message', data)
+        self.assertEqual(data['message'], 'Image uploaded successfully')
+        self.assertIn('inserted_id', data)
+        self.assertIn('filename', data)
+        self.assertEqual(data['filename'], 'bee.jpg')
 
-            # Assert bee count result is present
-            self.assertIn('bee_count', data)
-            self.assertIn('count', data['bee_count'])
-            self.assertIn('confidence', data['bee_count'])
-            self.assertIsInstance(data['bee_count']['count'], int)
-            self.assertIsInstance(data['bee_count']['confidence'], (int, float))
+        # Assert bee count result is present
+        self.assertIn('bee_count', data)
+        self.assertIn('count', data['bee_count'])
+        self.assertIn('confidence', data['bee_count'])
+        self.assertIsInstance(data['bee_count']['count'], int)
+        self.assertIsInstance(data['bee_count']['confidence'], (int, float))
 
-            # Verify metric was saved to database
-            data_type_id = util.objectid_to_str(data_type['_id'])
-            metric = mongo.metrics_collection.find_one(
-                {'data_type_id': data_type_id,},
-                sort=[('datetime', -1)] # Get most recent
-            )
-            self.assertIsNotNone(metric, "Bee count metric should be saved to database")
-            self.assertEqual(metric['value'], data['bee_count']['count'], "Metric value should match bee count result")
+        # Verify metric was saved to database
+        data_type_id = util.objectid_to_str(data_type['_id'])
+        metric = mongo.metrics_collection.find_one(
+            {'data_type_id': data_type_id},
+            sort=[('datetime', -1)] # Get most recent
+        )
+        self.assertIsNotNone(metric, "Bee count metric should be saved to database")
+        self.assertEqual(metric['value'], data['bee_count']['count'], "Metric value should match bee count result")
 
     def test_defense_image_upload(self):
         """Test POST request to /api/images endpoint with image for predator analysis."""
