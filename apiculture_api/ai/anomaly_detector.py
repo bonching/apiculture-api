@@ -51,4 +51,5 @@ class AnomalyDetector:
 
         alert = ANOMALY_MESSAGE_TEMPLATE[data_type][quantifier]
         alert['severity'] = 'warning'
+        alert['alertType'] = 'anomaly_detected'
         enqueue_sse(alert)

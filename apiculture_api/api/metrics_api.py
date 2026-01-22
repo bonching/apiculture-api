@@ -85,6 +85,7 @@ def save_metrics(data):
                 'severity': 'info',
                 'beehiveId': beehiveId,
                 'dataType': "honey_harvested",
+                'alertType': "honey_harvested",
                 'sensorValue': 300
             }
             enqueue_sse(alert_event)
