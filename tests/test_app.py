@@ -92,7 +92,7 @@ class TestApicultureApi(unittest.TestCase):
             response = self.app.post(
                 '/api/images',
                 data={
-                    'image': (img_file, 'bee.jpg', 'image/jpeg'),
+                    'image': (img_file, 'data_collection_bee.jpg', 'image/jpeg'),
                     'context': 'data_collection',
                     'sensor_id': sensor_id
                 },
@@ -107,7 +107,7 @@ class TestApicultureApi(unittest.TestCase):
         self.assertEqual(data['message'], 'Image uploaded successfully')
         self.assertIn('inserted_id', data)
         self.assertIn('filename', data)
-        self.assertEqual(data['filename'], 'bee.jpg')
+        self.assertEqual(data['filename'], 'data_collection_bee.jpg')
 
         # Assert bee count result is present
         self.assertIn('bee_count', data)
