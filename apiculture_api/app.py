@@ -302,11 +302,15 @@ def monitor_sensor_heartbeat():
                 logger.error(f"Doc keys: {list(data_type.keys())}")
                 traceback.print_exc()
 
-runner = TaskRunner([(monitor_sensor_heartbeat, None, SENSOR_HEARTBEAT_FREQUENCY)])
+# Only start background tasks when running directly, not during tests
+runner = None
+if __name__ != '__main__':
+    runner = TaskRunner([(monitor_sensor_heartbeat, None, SENSOR_HEARTBEAT_FREQUENCY)])
 
 if __name__ == '__main__':
     try:
         logger.info(f"Starting Apiculture API on http://0.0.0.0:{API_PORT}")
         app.run(debug=True, host='0.0.0.0', port=API_PORT)
     finally:
-        runner.shutdown(wait=True)
+        if runner:
+            runner.shutdown(wait=True)

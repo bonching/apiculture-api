@@ -21,6 +21,22 @@ class TestApicultureApi(unittest.TestCase):
         # Invalid data (non-JSON)
         self.invalid_data = "not a json string"
 
+    @classmethod
+    def tearDownClass(cls):
+        """Clean up resources after all tests in this class have run."""
+        # Close all MongoDB connections to prevent the process from hanging
+        from apiculture_api import app as flask_app_module
+        from apiculture_api.api import farms_api, hives_api, sensors_api, metrics_api, harvest_api
+        from apiculture_api import alerts_api
+
+        # Close connections from all modules
+        for module in [flask_app_module, farms_api, hives_api, sensors_api, metrics_api, harvest_api, alerts_api]:
+            if hasattr(module, 'mongo'):
+                try:
+                    module.mongo.close()
+                except Exception:
+                    pass # Ignore errors during cleanup
+
     def test_post_valid_sensor_data(self):
         """Test POST request with valid JSON data."""
         response = self.app.post(
