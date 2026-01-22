@@ -190,6 +190,7 @@ class TestApicultureApi(unittest.TestCase):
             )
 
         data = json.loads(response.data)
+        print(f"Response data: {data}")
 
         # Assert successful upload
         self.assertEqual(response.status_code, 201)

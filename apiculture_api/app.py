@@ -228,12 +228,12 @@ def upload_image():
         if predator_result is not None:
             response['predator_analysis'] = image_doc['predator_analysis']
 
+            # Only run sprinkler when a predator is actually detected.
+            if predator_result is not None and predator_result.predator_detected:
+                response['run_sprinkler'] = 'Y'
+
         if bee_count_result is not None:
             response['bee_count'] = image_doc['bee_count']
-
-        # Only run sprinkler when a predator is actually detected.
-        if predator_result is not None and predator_result.predator_detected:
-            response['run_sprinkler'] = 'Y'
 
         return jsonify(response), 201
     except Exception as e:
