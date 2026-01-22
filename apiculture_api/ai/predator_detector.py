@@ -155,7 +155,7 @@ class PredatorDetector:
                     "wasp_score": float(wasp_score),
                     "bear_score": float(bear_score),
                     "bird_score": float(bird_score),
-                    "content_type": content_type or "unknown",
+                    "content_type": content_type,
                     "image_size": f"{width}x{height}"
                 }
             )

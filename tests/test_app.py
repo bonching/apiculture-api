@@ -187,7 +187,7 @@ class TestApicultureApi(unittest.TestCase):
                 data={
                     'image': (img_file, f'defense_{selected_image}', content_type),
                     'context': 'defense',
-                    'sensor_id': sensor_id,
+                    'sensor_id': sensor_id
                 },
                 content_type='multipart/form-data'
             )

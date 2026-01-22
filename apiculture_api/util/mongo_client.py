@@ -61,7 +61,7 @@ class ApicultureMongoClient():
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """Context manager exit - ensures client is close."""
+        """Context manager exit - ensures client is closed."""
         self.close()
         return False
 

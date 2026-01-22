@@ -53,7 +53,7 @@ class AnomalyDetector:
         if beehive_name:
             location_context = f" at {beehive_name}"
         if farm_name:
-            location_context = f" ({farm_name})"
+            location_context += f" ({farm_name})"
 
         ANOMALY_MESSAGE_TEMPLATE = {
             'temperature': {
