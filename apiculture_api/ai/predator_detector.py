@@ -56,10 +56,10 @@ class PredatorDetector:
             return PredatorDetectionResult(False, 0.0, None, {'reason': 'empty image'})
 
         # If we have a loaded model, use it for detection.
-        if self._net is None:
+        if self._net is not None:
             return self._analyze_with_model(image_bytes, content_type)
 
-        # otherwise, use heuristic-based detection (fallback)
+        # Otherwise, use heuristic-based detection (fallback)
         return self._analyze_with_heuristics(image_bytes, content_type)
 
     def _analyze_with_model(self, image_bytes: bytes, content_type: Optional[str] = None) -> PredatorDetectionResult:
@@ -103,7 +103,7 @@ class PredatorDetector:
         """Analyze using color and shape heuristics for common bee predators.
 
         This fallback method detects:
-        - Wasps/Hornets: yellow/black or orange/black striped patterns, larget size
+        - Wasps/Hornets: yellow/black or orange/black striped patterns, larger size
         - Bears: brown/black fur textures
         - Birds: feather patterns and beak-like shapes
         """
@@ -116,7 +116,7 @@ class PredatorDetector:
             if img is None:
                 return PredatorDetectionResult(False, 0.0, None, {'reason': 'failed to decode image'})
 
-            # Convert to Hsv for better color analysis
+            # Convert to HSV for better color analysis
             hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
             height, width = img.shape[:2]
 
@@ -125,8 +125,8 @@ class PredatorDetector:
 
             # Note: Bear and bird detection disabled to reduce false positives
             # with close-up bee images. Enable when a proper ML model is available.
-            bear_score = 0.0 # self._detect_bear(img, hsv)
-            bird_score = 0.0 # self._detect_bird(img, hsv)
+            bear_score = 0.0  # self._detect_bear(img, hsv)
+            bird_score = 0.0  # self._detect_bird(img, hsv)
 
             # Determine the most likely predator
             max_score = max(wasp_score, bear_score, bird_score)
@@ -136,7 +136,7 @@ class PredatorDetector:
             # Note: Bees and hornets have similar yellow/black patterns, so
             # perfect separation requires ML model. This heuristic aims for
             # reasonable detection with acceptable false positive rate.
-            if max_score > 0.32:
+            if max_score > 0.32:  # Threshold for detection
                 if wasp_score == max_score:
                     predator_type = "hornet/wasp"
                 elif bear_score == max_score:
@@ -152,9 +152,9 @@ class PredatorDetector:
                 predator=predator_type,
                 details={
                     "method": "heuristic",
-                    "wasp_score": wasp_score,
-                    "bear_score": bear_score,
-                    "bird_score": bird_score,
+                    "wasp_score": float(wasp_score),
+                    "bear_score": float(bear_score),
+                    "bird_score": float(bird_score),
                     "content_type": content_type or "unknown",
                     "image_size": f"{width}x{height}"
                 }
@@ -216,7 +216,7 @@ class PredatorDetector:
             return 0.0
 
     def _detect_bear(self, img, hsv) -> float:
-        """Detect bear characteristics: brown/dark fur textures."""
+        """Detect bear characteristics: brown/dark fur texture."""
         try:
             import cv2 # type: ignore
             import numpy as np # type: ignore
@@ -244,7 +244,7 @@ class PredatorDetector:
         except Exception:
             return 0.0
 
-    def _detect_bird(self, img, hsv):
+    def _detect_bird(self, img, hsv) -> float:
         """Detect bird characteristics: varied colors, edge patterns."""
         try:
             import cv2 # type: ignore
@@ -262,7 +262,7 @@ class PredatorDetector:
 
             # Birds have VERY distinct edges and high color variation
             # Require strong evidence to avoid false positives
-            if edge_ratio > 0.12 and color_std < 30:
+            if edge_ratio > 0.12 and color_std > 30:
                 return min(1.0, edge_ratio * 5.0)
 
             return 0.0

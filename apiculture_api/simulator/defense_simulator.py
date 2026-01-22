@@ -32,7 +32,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s:%(lineno)d - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('../apiculture-api.log', encoding='utf-8'),
+        logging.FileHandler('apiculture-api.log', encoding='utf-8'),
         logging.StreamHandler(sys.stdout)
     ]
 )
@@ -50,7 +50,7 @@ class DefenseSimulator:
 
     def __init__(self):
         # Get path to predator images
-        self.images_dir = Path(__file__).parent / "images" / "bee_predators"
+        self.images_dir = Path(__file__).parent.parent.parent / "images" / "bee_predators"
         if not self.images_dir.exists():
             logger.error(f"Predator images directory not found: {self.images_dir}")
             raise FileNotFoundError(f"Directory not found: {self.images_dir}")
@@ -58,8 +58,8 @@ class DefenseSimulator:
         # Get list of predator images
         self.predator_images = list(self.images_dir.glob("*.jpg")) + list(self.images_dir.glob("*.png"))
         if not self.predator_images:
-            logger.error(f"No predator images found in directory: {self.images_dir}")
-            raise FileNotFoundError(f"No predator images found in directory: {self.images_dir}")
+            logger.error(f"No predator images found in: {self.images_dir}")
+            raise FileNotFoundError(f"No predator images found in: {self.images_dir}")
 
         logger.info(f"Found {len(self.predator_images)} predator images in: {self.images_dir}")
 
@@ -68,8 +68,8 @@ class DefenseSimulator:
         Run the defense simulator.
 
         Args:
-             interval_seconds: Time to wait between simulations (default: 30 seconds)
-             max_runs: Maximum number of runs (None = run indefinitely)
+            interval_seconds: Time to wait between simulations (default: 30 seconds)
+            max_runs: Maximum number of runs (None = run indefinitely)
         """
         # Get sensors with defense capability
         sensors = list(mongo.sensors_collection.find({
@@ -89,7 +89,7 @@ class DefenseSimulator:
             while True:
                 run_count += 1
 
-                if max_runs and run_count >= max_runs:
+                if max_runs and run_count > max_runs:
                     logger.info(f"Reached maximum runs ({max_runs}). Stopping simulator.")
                     break
 
@@ -103,10 +103,10 @@ class DefenseSimulator:
 
                 # Randomly select a sensor if available
                 sensor_id = None
-                sensor_name = "unknown"
+                sensor_name = "Unknown"
                 if sensors:
                     sensor = random.choice(sensors)
-                    sensor_id = util.objectid_to_str(sensor["_id"])
+                    sensor_id = util.objectid_to_str(sensor['_id'])
                     sensor_name = sensor.get('name', 'Unknown')
                     logger.info(f"Using sensor: {sensor_name} (ID: {sensor_id})")
 
@@ -121,7 +121,7 @@ class DefenseSimulator:
 
                 # Wait before next simulation (unless this was the last run)
                 if not max_runs or run_count < max_runs:
-                    logger.info(f"Waiting {interval_seconds} seconds before next simulation...")
+                    logger.info(f"\nWaiting {interval_seconds} seconds before next simulation...")
                     time.sleep(interval_seconds)
 
         except KeyboardInterrupt:
@@ -135,17 +135,17 @@ class DefenseSimulator:
         Upload a defense image to the API server.
 
         Args:
-             image_path: Path to the image file
-             sensor_id: Optional sensor ID
+            image_path: Path to the image file
+            sensor_id: Optional sensor ID
 
         Returns:
             Response data dict or None on failure
         """
         try:
             # Prepare the multipart form data
-            with open(image_path, 'rb') as image_file:
+            with open(image_path, 'rb') as img_file:
                 files = {
-                    'image': (f"defense_{image_path.name}", image_file, 'image/jpeg')
+                    'image': (f"defense_{image_path.name}", img_file, 'image/jpeg')
                 }
 
                 data = {
@@ -153,10 +153,10 @@ class DefenseSimulator:
                 }
 
                 if sensor_id:
-                    data['sensor_id'] = sensor_id
+                    data['sensorId'] = sensor_id
 
                 # POST to the image upload endpoint
-                url = f"http://{API_HOST}:{API_PORT}/api/images"
+                url = f'http://{API_HOST}:{API_PORT}/api/images'
                 logger.info(f"POST {url}")
                 logger.info(f"   - Image: {image_path.name}")
                 logger.info(f"   - Context: defense")
@@ -188,7 +188,7 @@ class DefenseSimulator:
             return None
 
     def _log_result(self, result):
-        """Log the result of teh defense simulation."""
+        """Log the result of the defense simulation."""
         logger.info(f"\nResult:")
         logger.info(f"  - Image ID: {result.get('inserted_id')}")
         logger.info(f"  - Filename: {result.get('filename')}")
@@ -198,7 +198,7 @@ class DefenseSimulator:
             logger.info(f"\n  Predator Analysis:")
             logger.info(f"    - Detected: {analysis.get('predator_detected')}")
             logger.info(f"    - Confidence: {analysis.get('confidence', 0):.1%}")
-            logger.info(f"    - Predator: {analysis.get('predator', 'None')}")
+            logger.info(f"    - Predator Type: {analysis.get('predator', 'None')}")
 
             if 'details' in analysis:
                 details = analysis['details']
@@ -207,16 +207,16 @@ class DefenseSimulator:
 
         if 'run_sprinkler' in result:
             logger.info(f"\n  Defense Action:")
-            logger.info(f"  - Sprinkler Activated: {result['run_sprinkler']}")
-            logger.info(f"  - ALERT SENT TO BEEKEEPERS VIA SSE")
+            logger.info(f"    - Sprinkler Activated: {result['run_sprinkler']}")
+            logger.info(f"    - ALERT SENT TO BEEKEEPERS VIA SSE")
 
     def run_once(self, image_name=None, sensor_id=None):
         """
         Run a single defense simulation.
 
         Args:
-             image_name: Optional specific image name to use (otherwise random)
-             sensor_id: Optional sensor ID to use
+            image_name: Optional specific image name to use (otherwise random)
+            sensor_id: Optional sensor ID to use
 
         Returns:
             Response data dict or None on failure
@@ -244,7 +244,7 @@ class DefenseSimulator:
             }))
             if sensors:
                 sensor = random.choice(sensors)
-                sensor_id = util.objectid_to_str(sensor["_id"])
+                sensor_id = util.objectid_to_str(sensor['_id'])
                 logger.info(f"Using sensor: {sensor.get('name')} (ID: {sensor_id})")
 
         # Upload the image
@@ -259,7 +259,7 @@ class DefenseSimulator:
         return result
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     """
     Run the defense simulator.
     
@@ -276,13 +276,13 @@ if __name__ == "__main__":
         # Run specific number of times
         python -m apiculture_api.simulator.defense_simulator --continuous --runs 5
     """
-    import argpase
+    import argparse
 
-    parser = argpase.ArgumentParser(description='Defense Simulator - Simulates predator detection')
+    parser = argparse.ArgumentParser(description='Defense Simulator - Simulates predator detection')
     parser.add_argument('--continuous', action='store_true',
                         help='Run continuously instead of once')
     parser.add_argument('--interval', type=int, default=30,
-                        help='Seconds between simulations (default: 30 seconds)')
+                        help='Seconds between simulations (default: 30)')
     parser.add_argument('--runs', type=int, default=None,
                         help='Maximum number of runs (default: infinite)')
     parser.add_argument('--image', type=str, default=None,

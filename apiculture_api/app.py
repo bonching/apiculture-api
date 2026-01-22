@@ -229,49 +229,49 @@ def upload_image():
             response['predator_analysis'] = image_doc['predator_analysis']
 
             # Only run sprinkler when a predator is actually detected.
-            if predator_result is not None and predator_result.predator_detected:
+            if predator_result.predator_detected:
                 response['run_sprinkler'] = 'Y'
 
-            # Notify the beekeeper
-            try:
-                # Get sensor, hive, and farm information for context
-                sensor = None
-                hive = None
-                farm = None
+                # Notify the beekeeper
+                try:
+                    # Get sensor, hive, and farm information for context
+                    sensor = None
+                    hive = None
+                    farm = None
 
-                if sensor_id:
-                    sensor = mongo.sensors_collection.find_one({"_id": util.str_to_objectid(sensor_id)})
-                    if sensor and sensor.get('beehive_id'):
-                        hive = mongo.hives_collection.find_one({"_id": util.str_to_objectid(sensor['beehive_id'])})
-                        if hive and hive.get('farm_id'):
-                            farm = mongo.farms_collection.find_one({"_id": util.str_to_objectid(hive['farm_id'])})
+                    if sensor_id:
+                        sensor = mongo.sensors_collection.find_one({"_id": util.str_to_objectid(sensor_id)})
+                        if sensor and sensor.get('beehive_id'):
+                            hive = mongo.hives_collection.find_one({"_id": util.str_to_objectid(sensor['beehive_id'])})
+                            if hive and hive.get('farm_id'):
+                                farm = mongo.farms_collection.find_one({"_id": util.str_to_objectid(hive['farm_id'])})
 
-                # Build the event message
-                predator_type = predator_result.predator or "unknown predator"
-                confidence_pct = int(predator_result.confidence * 100)
+                    # Build the event message
+                    predator_type = predator_result.predator or "unknown predator"
+                    confidence_pct = int(predator_result.confidence * 100)
 
-                event = {
-                    "alertType": "predator_detected",
-                    "severity": "critical",
-                    "title": "Predator Detected!",
-                    "message": f"A {predator_type} has been detected with {confidence_pct}% confidence. Defense systems activated.",
-                    "timestampMs": datetime.now(timezone.utc)
-                }
+                    event = {
+                        "alertType": "predator_detected",
+                        "severity": "critical",
+                        "title": "Predator Detected!",
+                        "message": f"A {predator_type} has been detected with {confidence_pct}% confidence. Defense systems activated.",
+                        "timestampMs": datetime.now(timezone.utc)
+                    }
 
-                # Add contextual information if available
-                if sensor:
-                    event["sensorName"] = sensor.get('name', 'Unknown Sensor')
-                if hive:
-                    event["beehiveName"] = hive.get('name', 'Unknown Beehive')
-                if farm:
-                    event["farmName"] = farm.get('name', 'Unknown Farm')
+                    # Add contextual information if available
+                    if sensor:
+                        event["sensorName"] = sensor.get('name', 'Unknown Sensor')
+                    if hive:
+                        event["beehiveName"] = hive.get('name', 'Unknown Beehive')
+                    if farm:
+                        event["farmName"] = farm.get('name', 'Unknown Farm')
 
-                # Send the event to SSE queue
-                enqueue_sse(event)
-                logger.info(f"Predator detection alert sent: {predator_type} at {event.get('farmName', 'Unknown location')}")
-            except Exception as e:
-                logger.error(f"Failed to send predator detection notification: {str(e)}")
-                traceback.print_exc()
+                    # Send the event to SSE queue
+                    enqueue_sse(event)
+                    logger.info(f"Predator detection alert sent: {predator_type} at {event.get('farmName', 'Unknown location')}")
+                except Exception as e:
+                    logger.error(f"Failed to send predator detection notification: {str(e)}")
+                    traceback.print_exc()
 
         if bee_count_result is not None:
             response['bee_count'] = image_doc['bee_count']
@@ -345,7 +345,7 @@ def monitor_sensor_heartbeat():
 
 # Only start background tasks when running directly, not during tests
 runner = None
-if __name__ != '__main__':
+if __name__ == '__main__':
     runner = TaskRunner([(monitor_sensor_heartbeat, None, SENSOR_HEARTBEAT_FREQUENCY)])
 
 if __name__ == '__main__':

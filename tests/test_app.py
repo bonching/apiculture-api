@@ -35,7 +35,7 @@ class TestApicultureApi(unittest.TestCase):
                 try:
                     module.mongo.close()
                 except Exception:
-                    pass # Ignore errors during cleanup
+                    pass  # Ignore errors during cleanup
 
     def test_post_valid_sensor_data(self):
         """Test POST request with valid JSON data."""
@@ -136,7 +136,7 @@ class TestApicultureApi(unittest.TestCase):
             data_type_id = util.objectid_to_str(data_type['_id'])
             metric = mongo.metrics_collection.find_one(
                 {'data_type_id': data_type_id},
-                sort=[('datetime', -1)] # Get most recent
+                sort=[('datetime', -1)]  # Get most recent
             )
             self.assertIsNotNone(metric, "Bee count metric should be saved to database")
             self.assertEqual(metric['value'], data['bee_count']['count'], "Metric value should match bee count")
@@ -162,6 +162,8 @@ class TestApicultureApi(unittest.TestCase):
         if not image_files:
             self.skipTest(f"No image files found in {predators_folder}")
 
+        sensor_id = '693b4c90943e75b9d619e11c'
+
         # Randomly select an image
         selected_image = random.choice(image_files)
         image_path = os.path.join(predators_folder, selected_image)
@@ -183,8 +185,9 @@ class TestApicultureApi(unittest.TestCase):
             response = self.app.post(
                 '/api/images',
                 data={
-                    'image': (img_file, selected_image, content_type),
-                    'context': 'defense'
+                    'image': (img_file, f'defense_{selected_image}', content_type),
+                    'context': 'defense',
+                    'sensor_id': sensor_id,
                 },
                 content_type='multipart/form-data'
             )
@@ -198,7 +201,7 @@ class TestApicultureApi(unittest.TestCase):
         self.assertEqual(data['message'], 'Image uploaded successfully')
         self.assertIn('inserted_id', data)
         self.assertIn('filename', data)
-        self.assertEqual(data['filename'], selected_image)
+        self.assertEqual(data['filename'], f'defense_{selected_image}')
 
         # Assert predator analysis result is present
         self.assertIn('predator_analysis', data)

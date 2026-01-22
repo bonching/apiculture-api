@@ -35,7 +35,7 @@ class AnomalyDetector:
             # Get beehiveId from sensor
             sensor = mongo.sensors_collection.find_one({'_id': util.str_to_objectid(data_type_obj['sensor_id'])})
             if sensor:
-                beehive_id = sensor.get('beehiveId')
+                beehive_id = sensor.get('beehive_id')
 
         # Get beehive name for better context in message
         beehive_name = None
@@ -51,9 +51,9 @@ class AnomalyDetector:
 
         location_context = ""
         if beehive_name:
-            location_context = f"at {beehive_name}"
+            location_context = f" at {beehive_name}"
         if farm_name:
-            location_context = f"in ({farm_name})"
+            location_context = f" ({farm_name})"
 
         ANOMALY_MESSAGE_TEMPLATE = {
             'temperature': {
@@ -76,7 +76,7 @@ class AnomalyDetector:
                     'message': f'Humidity falls below normal range{location_context}: {value}{unit}'
                 }
             },
-            'c02': {
+            'co2': {
                 'high': {
                     'title': 'CO2 Level Too High',
                     'message': f'CO2 concentration exceeds normal range{location_context}: {value}{unit}'
