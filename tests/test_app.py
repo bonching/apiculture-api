@@ -74,56 +74,56 @@ class TestApicultureApi(unittest.TestCase):
         if not os.path.exists(image_path):
             self.skipTest(f"Image {image_path} does not exist")
 
-        mongo = ApicultureMongoClient()
-        util = AppUtil()
+        with ApicultureMongoClient() as mongo:
+            util = AppUtil()
 
-        sensor_id = '693b4c90943e75b9d619e11b'
+            sensor_id = '693b4c90943e75b9d619e11b'
 
-        # Verify bee_count data type exists
-        data_type = mongo.data_types_collection.find_one({
-            'sensor_id': sensor_id,
-            'data_type': 'bee_count'
-        })
-        if not data_type:
-            self.skipTest("bee_count data_type not found for sensor")
+            # Verify bee_count data type exists
+            data_type = mongo.data_types_collection.find_one({
+                'sensor_id': sensor_id,
+                'data_type': 'bee_count'
+            })
+            if not data_type:
+                self.skipTest("bee_count data_type not found for sensor")
 
-        # Open and read the image file
-        with open(image_path, 'rb') as img_file:
-            response = self.app.post(
-                '/api/images',
-                data={
-                    'image': (img_file, 'data_collection_bee.jpg', 'image/jpeg'),
-                    'context': 'data_collection',
-                    'sensor_id': sensor_id
-                },
-                content_type='multipart/form-data'
+            # Open and read the image file
+            with open(image_path, 'rb') as img_file:
+                response = self.app.post(
+                    '/api/images',
+                    data={
+                        'image': (img_file, 'data_collection_bee.jpg', 'image/jpeg'),
+                        'context': 'data_collection',
+                        'sensor_id': sensor_id
+                    },
+                    content_type='multipart/form-data'
+                )
+
+                data = json.loads(response.data)
+
+            # Assert successful upload
+            self.assertEqual(response.status_code, 201)
+            self.assertIn('message', data)
+            self.assertEqual(data['message'], 'Image uploaded successfully')
+            self.assertIn('inserted_id', data)
+            self.assertIn('filename', data)
+            self.assertEqual(data['filename'], 'data_collection_bee.jpg')
+
+            # Assert bee count result is present
+            self.assertIn('bee_count', data)
+            self.assertIn('count', data['bee_count'])
+            self.assertIn('confidence', data['bee_count'])
+            self.assertIsInstance(data['bee_count']['count'], int)
+            self.assertIsInstance(data['bee_count']['confidence'], (int, float))
+
+            # Verify metric was saved to database
+            data_type_id = util.objectid_to_str(data_type['_id'])
+            metric = mongo.metrics_collection.find_one(
+                {'data_type_id': data_type_id},
+                sort=[('datetime', -1)] # Get most recent
             )
-
-            data = json.loads(response.data)
-
-        # Assert successful upload
-        self.assertEqual(response.status_code, 201)
-        self.assertIn('message', data)
-        self.assertEqual(data['message'], 'Image uploaded successfully')
-        self.assertIn('inserted_id', data)
-        self.assertIn('filename', data)
-        self.assertEqual(data['filename'], 'data_collection_bee.jpg')
-
-        # Assert bee count result is present
-        self.assertIn('bee_count', data)
-        self.assertIn('count', data['bee_count'])
-        self.assertIn('confidence', data['bee_count'])
-        self.assertIsInstance(data['bee_count']['count'], int)
-        self.assertIsInstance(data['bee_count']['confidence'], (int, float))
-
-        # Verify metric was saved to database
-        data_type_id = util.objectid_to_str(data_type['_id'])
-        metric = mongo.metrics_collection.find_one(
-            {'data_type_id': data_type_id},
-            sort=[('datetime', -1)] # Get most recent
-        )
-        self.assertIsNotNone(metric, "Bee count metric should be saved to database")
-        self.assertEqual(metric['value'], data['bee_count']['count'], "Metric value should match bee count")
+            self.assertIsNotNone(metric, "Bee count metric should be saved to database")
+            self.assertEqual(metric['value'], data['bee_count']['count'], "Metric value should match bee count")
 
     def test_defense_image_upload(self):
         """Test POST request to /api/images endpoint with image for predator analysis."""

@@ -50,4 +50,19 @@ class ApicultureMongoClient():
             logger.error(f"Failed to connect to MongoDB: {e}")
             exit(1)
 
+    def close(self):
+        """Close the MongoDB client connection"""
+        if self.client:
+            self.client.close()
+            logger.info("MongoDB connection closed")
+
+    def __enter__(self):
+        """Context manager entry"""
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Context manager exit"""
+        self.close()
+        return False
+
 
