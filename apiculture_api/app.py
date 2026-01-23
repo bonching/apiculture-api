@@ -368,15 +368,15 @@ if __name__ == '__main__':
 
     # Only start background tasks in the main process (not the reloader process)
     # Flask's reloader spawns a child process, and we only want tasks in the child
-    if os.environ.get("WERKZEUG_RUN_MAIN") == 'true':
+    if os.environ.get('WERKZEUG_RUN_MAIN') == 'true':
         runner = TaskRunner([(monitor_sensor_heartbeat, None, SENSOR_HEARTBEAT_FREQUENCY)])
         logger.info("Background tasks started")
 
         # Register cleanup handlers
         atexit.register(cleanup_background_tasks)
 
-        def signal_handler(signal, frame):
-            logger.info(f"Received signal {signal}, shutting down...")
+        def signal_handler(signum, frame):
+            logger.info(f"Received signal {signum}, shutting down...")
             cleanup_background_tasks()
             sys.exit(0)
 
