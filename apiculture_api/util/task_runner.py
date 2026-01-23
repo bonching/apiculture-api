@@ -41,7 +41,11 @@ class TaskRunner:
     def __init__(self, tasks, default_interval=300):
         self.stop_event = threading.Event()
         self.default_interval = default_interval
-        self.executor = concurrent.futures.ThreadPoolExecutor(max_workers=len(tasks))
+        # Use daemon threads so they don't prevent the process from exiting
+        self.executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=len(tasks),
+            thread_name_prefix='TaskRunner'
+        )
         self.futures = []
         for task_func, task_args, task_interval in tasks:
             interval = task_interval if task_interval is not None else default_interval
@@ -62,7 +66,22 @@ class TaskRunner:
                 print(f"Error in task: {e}")
             stop_event.wait(interval)
 
-    def shutdown(self, wait=True):
+    def shutdown(self, wait=True, timeout=5):
         """Gracefully stop all tasks."""
         self.stop_event.set()
-        self.executor.shutdown(wait=wait)
+
+        if not wait:
+            # Cancel all pending futures
+            for future in self.futures:
+                future.cancel()
+
+        # Shutdown the executor with a timeout to prevent hanging
+        self.executor.shutdown(wait=wait, cancel_futures=not wait)
+
+        if wait:
+            # Wait for all futures to complete with timeout
+            for future in concurrent.futures.as_completed(self.futures, timeout=timeout):
+                try:
+                    future.result(timeout=0.1)
+                except (concurrent.futures.TimeoutError, Exception) as e:
+                    print(f"Task shutdown warning: {e}")
