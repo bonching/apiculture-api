@@ -349,13 +349,46 @@ def monitor_sensor_heartbeat():
 
 # Only start background tasks when running directly, not during tests
 runner = None
+
+def cleanup_background_tasks():
+    """Cleanup function to gracefully shutdown background tasks"""
+    global runner
+    if runner:
+        logger.info("Shutting down background tasks...")
+        runner.shutdown(wait=True)
+        runner = None
+        logger.info("Background tasks shut down successfully")
+
 if __name__ == '__main__':
-    runner = TaskRunner([(monitor_sensor_heartbeat, None, SENSOR_HEARTBEAT_FREQUENCY)])
+    import os
+    import atexit
+    import signal
+
+    # Only start background tasks in the main process (not the reloader process)
+    # Flask's reloader spawns a child process, and we only want tasks in the child
+    if os.environ.get("WERKZEUG_RUN_MAIN") == 'true':
+        runner = TaskRunner([(monitor_sensor_heartbeat, None, SENSOR_HEARTBEAT_FREQUENCY)])
+        logger.info("Background tasks started")
+
+        # Register cleanup handlers
+        atexit.register(cleanup_background_tasks)
+
+        def signal_handler(signal, frame):
+            logger.info(f"Received signal {signal}, shutting down...")
+            cleanup_background_tasks()
+            sys.exit(0)
+
+        signal.signal(signal.SIGINT, signal_handler)
+        signal.signal(signal.SIGTERM, signal_handler)
 
 if __name__ == '__main__':
     try:
         logger.info(f"Starting Apiculture API on http://0.0.0.0:{API_PORT}")
-        app.run(debug=True, host='0.0.0.0', port=API_PORT)
+        app.run(debug=True, host='0.0.0.0', port=API_PORT, use_reloader=True)
+    except KeyboardInterrupt:
+        logger.info("Received keyboard interrupt")
+    except Exception as e:
+        logger.error(f"Server error: {str(e)}")
+        traceback.print_exc()
     finally:
-        if runner:
-            runner.shutdown(wait=True)
+        cleanup_background_tasks()
