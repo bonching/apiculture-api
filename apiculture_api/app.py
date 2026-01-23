@@ -299,7 +299,7 @@ def monitor_sensor_heartbeat():
                     hive = mongo.hives_collection.find_one({"_id": util.str_to_objectid(sensor['beehive_id'])})
                     if hive is None:
                         event = {
-                            "alertType": "sensor_offline",
+                            "alertType": "offline_sensor",
                             "severity": "critical",
                             "title": "Sensor Non-Responsive",
                             "message": f"Sensor {sensor['name']} has been offline for more than {util.time_with_unit(delta.total_seconds())}.",
@@ -308,10 +308,11 @@ def monitor_sensor_heartbeat():
                     else:
                         farm = mongo.farms_collection.find_one({"_id": util.str_to_objectid(hive['farm_id'])})
                         event = {
-                            "alertType": "sensor_offline",
+                            "alertType": "offline_sensor",
                             "severity": "critical",
                             "title": "Sensor Non-Responsive",
                             "message": f"Sensor {sensor['name']} has been offline for more than {util.time_with_unit(delta.total_seconds())}.",
+                            "beehiveId": util.objectid_to_str(hive['_id']),
                             "beehiveName": hive['name'],
                             "farmName": farm['name']
                         }
@@ -323,7 +324,7 @@ def monitor_sensor_heartbeat():
                     hive = mongo.hives_collection.find_one({"_id": util.str_to_objectid(sensor['beehive_id'])})
                     if hive is None:
                         event = {
-                            "alertType": "sensor_online",
+                            "alertType": "online_sensor",
                             "severity": "info",
                             "title": "Sensor is back online",
                             "message": f"Sensor {sensor['name']} is back online"
@@ -331,10 +332,11 @@ def monitor_sensor_heartbeat():
                     else:
                         farm = mongo.farms_collection.find_one({"_id": util.str_to_objectid(hive['farm_id'])})
                         event = {
-                            "alertType": "sensor_online",
+                            "alertType": "online_sensor",
                             "severity": "info",
                             "title": "Sensor is back online",
                             "message": f"Sensor {sensor['name']} is back online",
+                            "beehiveId": util.objectid_to_str(hive['_id']),
                             "beehiveName": hive['name'],
                             "farmName": farm['name']
                         }

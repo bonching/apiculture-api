@@ -42,6 +42,9 @@ def enqueue_sse(event_data):
     logger.info(f"Successfully saved alert with IDs: {result.inserted_id}")
     event_data['id'] = util.objectid_to_str(result.inserted_id)
 
+    # Convert all ObjectIds to strings to ensure JSON serializability
+    event_data = util.objectid_to_str(event_data)
+
     sse_queue.put({"data": event_data})
 
 def generate_alerts():
