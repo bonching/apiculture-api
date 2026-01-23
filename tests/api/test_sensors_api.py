@@ -174,7 +174,7 @@ class TestSensorsApi(unittest.TestCase):
                     'beehiveId': "693ad7c84739d5289a1e0835",
                     'hiveLocation': "external",
                     'active': True,
-                    'simulate': True,
+                    'simulate': False,
                     'systems': ["defense"]
                 }
             ]),
@@ -379,8 +379,8 @@ class TestSensorsApi(unittest.TestCase):
                     'status': "online",
                     'currentValue': "25°C, 45%",
                     'beehiveId': None,
-                    'active': True,
-                    'simulate': True,
+                    'active': False,
+                    'simulate': False,
                     'systems': ["data_collection"]
                 },
                 {
