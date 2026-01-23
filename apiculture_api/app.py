@@ -294,14 +294,14 @@ def monitor_sensor_heartbeat():
                 last_sensor_update = datetime.fromtimestamp(int(data_type['updated_at'].replace(tzinfo=timezone.utc).timestamp()), timezone.utc)
                 delta = datetime.now(timezone.utc) - last_sensor_update
                 if delta.total_seconds() > IDLE_TIME_TO_MARK_SENSOR_AS_OFFLINE and sensor['status'] == 'online':
-                    logger.warning(f"Sensor {sensor['_id']} has not been updated in the last 5 minutes")
+                    logger.warning(f"Sensor {sensor['_id']} has not been updated {util.time_with_unit(delta.total_seconds())}")
                     mongo.sensors_collection.update_one({"_id": sensor['_id']}, {'$set': {'status': 'offline', 'updated_at': datetime.now(timezone.utc)}})
                     hive = mongo.hives_collection.find_one({"_id": util.str_to_objectid(sensor['beehive_id'])})
                     if hive is None:
                         event = {
                           "severity": "critical",
                           "title": "Sensor Non-Responsive",
-                          "message": f"Sensor {sensor['name']} has been offline for more than 5 minutes.",
+                          "message": f"Sensor {sensor['name']} has been offline for more than {util.time_with_unit(delta.total_seconds())}.",
                           "timestampMs": datetime.now()
                         }
                     else:
@@ -309,7 +309,7 @@ def monitor_sensor_heartbeat():
                         event = {
                           "severity": "critical",
                           "title": "Sensor Non-Responsive",
-                          "message": f"Sensor {sensor['name']} has been offline for more than 5 minutes.",
+                          "message": f"Sensor {sensor['name']} has been offline for more than {util.time_with_unit(delta.total_seconds())}.",
                           "beehiveName": hive['name'],
                           "farmName": farm['name']
                         }

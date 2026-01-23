@@ -178,6 +178,44 @@ class AppUtil:
             unit = "week" if weeks == 1 else "weeks"
             return f"{weeks} {unit} ago"
 
+    def time_with_unit(self, seconds):
+        """
+        Convert seconds to the nearest appropriate time unit.
+
+        Args:
+        seconds (float or int): Time in seconds.
+
+        Returns:
+        str: Time value with unit (e.g., "1 minute", "2 hours").
+        """
+        if seconds < 1:
+            return "0 seconds"
+
+        if seconds < 60:
+            rounded_seconds = round(seconds)
+            unit = "second" if rounded_seconds == 1 else "seconds"
+            return f"{rounded_seconds} {unit}"
+
+        elif seconds < 3600:
+            rounded_minutes = round(seconds / 60)
+            unit = "minute" if rounded_minutes == 1 else "minutes"
+            return f"{rounded_minutes} {unit}"
+
+        elif seconds < 86400:
+            rounded_hours = round(seconds / 3600)
+            unit = "hour" if rounded_hours == 1 else "hours"
+            return f"{rounded_hours} {unit}"
+
+        elif seconds < 7 * 86400:
+            rounded_days = round(seconds / 86400)
+            unit = "day" if rounded_days == 1 else "days"
+            return f"{rounded_days} {unit}"
+
+        else:
+            rounded_weeks = round(seconds / (7 * 86400))
+            unit = "week" if rounded_weeks == 1 else "weeks"
+            return f"{rounded_weeks} {unit}"
+
     def convert_dict_str_to_utc_timestamp(data_dict, key):
         """
         Convert a specific dict value (datetime string) to UTC Unix timestamp (float).
