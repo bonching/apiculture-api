@@ -299,19 +299,21 @@ def monitor_sensor_heartbeat():
                     hive = mongo.hives_collection.find_one({"_id": util.str_to_objectid(sensor['beehive_id'])})
                     if hive is None:
                         event = {
-                          "severity": "critical",
-                          "title": "Sensor Non-Responsive",
-                          "message": f"Sensor {sensor['name']} has been offline for more than {util.time_with_unit(delta.total_seconds())}.",
-                          "timestampMs": datetime.now()
+                            "alertType": "sensor_offline",
+                            "severity": "critical",
+                            "title": "Sensor Non-Responsive",
+                            "message": f"Sensor {sensor['name']} has been offline for more than {util.time_with_unit(delta.total_seconds())}.",
+                            "timestampMs": datetime.now()
                         }
                     else:
                         farm = mongo.farms_collection.find_one({"_id": util.str_to_objectid(hive['farm_id'])})
                         event = {
-                          "severity": "critical",
-                          "title": "Sensor Non-Responsive",
-                          "message": f"Sensor {sensor['name']} has been offline for more than {util.time_with_unit(delta.total_seconds())}.",
-                          "beehiveName": hive['name'],
-                          "farmName": farm['name']
+                            "alertType": "sensor_offline",
+                            "severity": "critical",
+                            "title": "Sensor Non-Responsive",
+                            "message": f"Sensor {sensor['name']} has been offline for more than {util.time_with_unit(delta.total_seconds())}.",
+                            "beehiveName": hive['name'],
+                            "farmName": farm['name']
                         }
                     enqueue_sse(event)
                     continue # alert once per sensor
@@ -321,18 +323,20 @@ def monitor_sensor_heartbeat():
                     hive = mongo.hives_collection.find_one({"_id": util.str_to_objectid(sensor['beehive_id'])})
                     if hive is None:
                         event = {
-                          "severity": "info",
-                          "title": "Sensor is back online",
-                          "message": f"Sensor {sensor['name']} is back online"
+                            "alertType": "sensor_online",
+                            "severity": "info",
+                            "title": "Sensor is back online",
+                            "message": f"Sensor {sensor['name']} is back online"
                         }
                     else:
                         farm = mongo.farms_collection.find_one({"_id": util.str_to_objectid(hive['farm_id'])})
                         event = {
-                          "severity": "info",
-                          "title": "Sensor is back online",
-                          "message": f"Sensor {sensor['name']} is back online",
-                          "beehiveName": hive['name'],
-                          "farmName": farm['name']
+                            "alertType": "sensor_online",
+                            "severity": "info",
+                            "title": "Sensor is back online",
+                            "message": f"Sensor {sensor['name']} is back online",
+                            "beehiveName": hive['name'],
+                            "farmName": farm['name']
                         }
                     enqueue_sse(event)
                     continue # alert once per sensor
