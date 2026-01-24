@@ -304,7 +304,7 @@ def get_image(image_id):
             return jsonify({'error': 'Invalid image ID format'}), 400
 
         # Find the image in MongoDB
-        image_doc = util.fix_datetime(util.objectid_to_str(mongo.image_collection.find_one({"_id": obj_id})))
+        image_doc = mongo.image_collection.find_one({"_id": obj_id})
 
         if not image_doc:
             logger.warning(f"Image not found: {image_id}")
@@ -323,10 +323,16 @@ def get_image(image_id):
         # Include details if available
         if 'details' in image_doc:
             response['details'] = util.objectid_to_str(image_doc['details'])
+            # Convert analyzed_at to ISO format if present
+            if 'analyzed_at' in image_doc['details']:
+                response['details']['analyzed_at'] = image_doc['details']['analyzed_at'].isoformat()
 
         # Include bee count if available
         if 'bee_count' in image_doc:
             response['bee_count'] = image_doc['bee_count']
+            # Convert analyzed_at to ISO format if present
+            if 'analyzed_at' in image_doc['bee_count']:
+                response['bee_count']['analyzed_at'] = image_doc['bee_count']['analyzed_at'].isoformat()
 
         # If the client wants the actual image data, include it as base64
         include_data = request.args.get('include_data', 'false').lower() == 'true'
@@ -343,7 +349,10 @@ def get_image(image_id):
         return jsonify({'error': f'Failed to retrieve image: {str(e)}'}), 500
 
 def monitor_sensor_heartbeat():
+    logger.info("Starting sensor heartbeat monitoring task")
+
     sensors = list(mongo.sensors_collection.find({ "active": True}))
+    logger.info(f"sensors found: {len(sensors)}")
     for sensor in sensors:
         data_types = (mongo.data_types_collection.find({"sensor_id": util.objectid_to_str(sensor["_id"])})
                      .sort("updated_at", -1)
@@ -353,6 +362,7 @@ def monitor_sensor_heartbeat():
             try:
                 last_sensor_update = datetime.fromtimestamp(int(data_type['updated_at'].replace(tzinfo=timezone.utc).timestamp()), timezone.utc)
                 delta = datetime.now(timezone.utc) - last_sensor_update
+                logger.info(f"sensor id: {sensor['_id']}, status: {sensor['status']}, last updated {util.time_with_unit(delta.total_seconds())} ago")
                 if delta.total_seconds() > IDLE_TIME_TO_MARK_SENSOR_AS_OFFLINE and sensor['status'] == 'online':
                     logger.warning(f"Sensor {sensor['_id']} has not been updated {util.time_with_unit(delta.total_seconds())}")
                     mongo.sensors_collection.update_one({"_id": sensor['_id']}, {'$set': {'status': 'offline', 'updated_at': datetime.now(timezone.utc)}})
@@ -408,6 +418,7 @@ def monitor_sensor_heartbeat():
                 logger.error(f"Doc type: {type(data_type)}")
                 logger.error(f"Doc keys: {list(data_type.keys())}")
                 traceback.print_exc()
+    logger.info("Completed sensor heartbeat monitoring task")
 
 # Only start background tasks when running directly, not during tests
 runner = None

@@ -16,13 +16,20 @@ IOT_DATA_COLLECTION_WEBSOCKET_URL = f'http://{IOT_DATA_COLLECTION_HOST}:{IOT_DAT
 IOT_CONNECTION_TIMEOUT = 5
 IOT_SIMULATE_MODE = False # Enable simulation mode (No actual IoT connection required)
 
+# Simulation Configuration
+# TASK_RUNNER_RANDOM_DELAY_CEILING = 10
+# SENSOR_HEARTBEAT_FREQUENCY = 60 * 4
+# IDLE_TIME_TO_MARK_SENSOR_AS_OFFLINE = 60 * 6
+# DATA_COLLECTION_SIMULATION_FREQUENCY = 60 * 5
+
+# Testing Configuration
 TASK_RUNNER_RANDOM_DELAY_CEILING = 10
-SENSOR_HEARTBEAT_FREQUENCY = 60 * 4
-IDLE_TIME_TO_MARK_SENSOR_AS_OFFLINE = 60 * 6
-DATA_COLLECTION_SIMULATION_FREQUENCY = 60 * 5
+SENSOR_HEARTBEAT_FREQUENCY = 25
+IDLE_TIME_TO_MARK_SENSOR_AS_OFFLINE = 35
+DATA_COLLECTION_SIMULATION_FREQUENCY = 30
 
 DATA_COLLECTION_METRICS = {
-    'temperature': { 'base_value': 34.5, 'variance': 2, 'unit': '°C', 'anomaly_rate': 20 },
+    'temperature': { 'base_value': 34.5, 'variance': 2, 'unit': '°C', 'anomaly_rate': 1 },
     'humidity': { 'base_value': 58, 'variance': 5, 'unit': '%', 'anomaly_rate': 1 },
     'co2': { 'base_value': 420, 'variance': 30, 'unit': 'ppm', 'anomaly_rate': 1 },
     'voc': { 'base_value': 2.1, 'variance': 0.3, 'unit': 'kΩ', 'anomaly_rate': 1 },
