@@ -267,6 +267,9 @@ if __name__ == '__main__':
         # Run once with random image
         python -m apiculture_api.simulator.defense_simulator
         
+        # Run once with hardcoded sensos (for IntelliJ quick testing)
+        python -m apiculture_api.simulator.defense_simulator --use-hardcoded-sensor
+        
         # Run continuously (every 30 seconds)
         python -m apiculture_api.simulator.defense_simulator --continuous
         
@@ -289,13 +292,20 @@ if __name__ == '__main__':
                         help='Specific image filename to use')
     parser.add_argument('--sensor-id', type=str, default=None,
                         help='Specific sensor ID to use')
+    parser.add_argument('--use-hardcoded-sensor', action='store_true',
+                        help='Use hardcoded sensor ID 693b4c90943e75b9d619e11c (for quick testing)')
 
     args = parser.parse_args()
 
     simulator = DefenseSimulator()
 
+    # Use hardcoded sensor ID if requested (useful for IntelliJ run configurations)
+    sensor_id = args.sensor_id
+    if args.use_hardcoded_sensor:
+        sensor_id = '693b4c90943e75b9d619e11c'
+        logger.info("Using hardcoded sensor ID: 693b4c90943e75b9d619e11c")
+
     if args.continuous:
         simulator.run(interval_seconds=args.interval, max_runs=args.runs)
     else:
-        # simulator.run_once(image_name=args.image, sensor_id=args.sensor_id)
-        simulator.run_once(image_name=args.image, sensor_id='693b4c90943e75b9d619e11c')
+        simulator.run_once(image_name=args.image, sensor_id=args.sensor_id)
