@@ -53,7 +53,7 @@ class PredatorDetector:
         """Analyze image bytes and return a detection result."""
 
         if not image_bytes:
-            return PredatorDetectionResult(False, 0.0, None, {'reason': 'empty image'})
+            return PredatorDetectionResult(False, 0.0, None, {'method': 'validation_check', 'reason': 'empty image'})
 
         # If we have a loaded model, use it for detection.
         if self._net is not None:
@@ -71,7 +71,7 @@ class PredatorDetector:
             arr = np.frombuffer(image_bytes, dtype=np.uint8)
             img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
             if img is None:
-                return PredatorDetectionResult(False, 0.0, None, {'reason': 'failed to decode image'})
+                return PredatorDetectionResult(False, 0.0, None, {'method': 'opencv_dnn_model', 'reason': 'failed to decode image'})
 
             # Basic preprocessing; real model may need different scaling/size.
             blob = cv2.dnn.blobFromImage(img, scalefactor=1.0 / 255.0, size=(224, 224), swapRB=True)
@@ -81,7 +81,7 @@ class PredatorDetector:
             # Interpret output as class scores
             scores = out.flatten()
             if scores.size == 0:
-                return PredatorDetectionResult(False, 0.0, None, {'reason': 'no detections'})
+                return PredatorDetectionResult(False, 0.0, None, {'method': 'opencv_dnn_model', 'reason': 'no detections'})
 
             class_id = int(scores.argmax())
             confidence = float(scores[class_id])
@@ -94,10 +94,15 @@ class PredatorDetector:
                 predator_detected=predator_detected,
                 confidence=confidence,
                 predator=label if predator_detected else None,
-                details={"class_id": class_id, "label": label}
+                details={
+                    "method": "opencv_dnn_model",
+                    "class_id": class_id,
+                    "label": label,
+                    "model_path": self.model_path
+                }
             )
         except Exception as e:
-            return PredatorDetectionResult(False, 0.0, None, {'reason': 'analysis failed', 'error': str(e)})
+            return PredatorDetectionResult(False, 0.0, None, {'method': 'opencv_dnn_model', 'reason': 'analysis failed', 'error': str(e)})
 
     def _analyze_with_heuristics(self, image_bytes: bytes, content_type: Optional[str] = None) -> PredatorDetectionResult:
         """Analyze using color and shape heuristics for common bee predators.
@@ -114,7 +119,7 @@ class PredatorDetector:
             arr = np.frombuffer(image_bytes, dtype=np.uint8)
             img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
             if img is None:
-                return PredatorDetectionResult(False, 0.0, None, {'reason': 'failed to decode image'})
+                return PredatorDetectionResult(False, 0.0, None, {'method': 'color_pattern_heuristic_analysis', 'reason': 'failed to decode image'})
 
             # Convert to HSV for better color analysis
             hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -151,7 +156,8 @@ class PredatorDetector:
                 confidence=float(max_score),
                 predator=predator_type,
                 details={
-                    "method": "heuristic",
+                    "method": "color_pattern_heuristic_analysis",
+                    "description": "HSV color analysis with yellow/black pattern detection for wasps/hornets",
                     "wasp_score": float(wasp_score),
                     "bear_score": float(bear_score),
                     "bird_score": float(bird_score),
@@ -160,7 +166,7 @@ class PredatorDetector:
                 }
             )
         except Exception as e:
-            return PredatorDetectionResult(False, 0.0, None, {'reason': 'heuristic analysis failed', 'error': str(e)})
+            return PredatorDetectionResult(False, 0.0, None, {'method': 'color_pattern_heuristic_analysis', 'reason': 'heuristic analysis failed', 'error': str(e)})
 
     def _detect_wasp_hornet(self, img, hsv) -> float:
         """Detect wasp/hornet patterns: yellow/orange with black stripes."""

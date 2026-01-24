@@ -121,7 +121,7 @@ def upload_image():
         return jsonify({'error': 'Unsupported file type. Allowed: png, jpg, jpeg, gif'}), 400
 
     context = request.form.get('context')
-    sensor_id = request.form.get('sensor_id')
+    sensor_id = request.form.get('sensorId')
 
     try:
         import os
@@ -255,6 +255,10 @@ def upload_image():
                         "severity": "critical",
                         "title": "Predator Detected!",
                         "message": f"A {predator_type} has been detected with {confidence_pct}% confidence. Defense systems activated.",
+                        "imageId": str(result.inserted_id),
+                        "details": {
+                            "predatorDetectionMethod": predator_result.details.get("description")
+                        },
                         "timestampMs": datetime.now(timezone.utc)
                     }
 
@@ -281,6 +285,62 @@ def upload_image():
         logger.error(f"Failed to save image: {str(e)}")
         return jsonify({'error': f'Failed to save image: {str(e)}'}), 500
 
+
+@app.route('/api/images/<image_id>', methods=['GET'])
+def get_image(image_id):
+    """
+    Endpoint to retrieve an image bu its ID.
+    Returns the image metadata and optionally the image data.
+    """
+    logger.info(f"Received GET request to /api/images/{image_id} from {request.remote_addr}")
+
+    try:
+        # Convert string ID to ObjectId
+        from bson import ObjectId
+        try:
+            obj_id = ObjectId(image_id)
+        except Exception as e:
+            logger.warning(f"Invalid image ID format: {image_id}")
+            return jsonify({'error': 'Invalid image ID format'}), 400
+
+        # Find the image in MongoDB
+        image_doc = util.fix_datetime(util.objectid_to_str(mongo.image_collection.find_one({"_id": obj_id})))
+
+        if not image_doc:
+            logger.warning(f"Image not found: {image_id}")
+            return jsonify({'error': 'Image not found'}), 404
+
+        # Build response with metadata
+        response = {
+            'id': image_doc.get('id'),
+            'filename': image_doc.get('filename'),
+            'sensor_id': image_doc.get('sensor_id'),
+            'content_type': image_doc.get('content_type'),
+            'upload_time': image_doc.get('upload_time'),
+            'context': image_doc.get('context'),
+        }
+
+        # Include details if available
+        if 'details' in image_doc:
+            response['details'] = util.objectid_to_str(image_doc['details'])
+
+        # Include bee count if available
+        if 'bee_count' in image_doc:
+            response['bee_count'] = image_doc['bee_count']
+
+        # If the client wants the actual image data, include it as base64
+        include_data = request.args.get('include_data', 'false').lower() == 'true'
+        if include_data and 'data' in image_doc:
+            import base64
+            response['data'] = base64.b64decode(image_doc['data']).decode('utf-8')
+
+        logger.info(f"Successfully retrieved image: {image_id}")
+        return jsonify(response), 200
+
+    except Exception as e:
+        logger.error(f"Failed to retrieve image: {str(e)}")
+        traceback.print_exc()
+        return jsonify({'error': f'Failed to retrieve image: {str(e)}'}), 500
 
 def monitor_sensor_heartbeat():
     sensors = list(mongo.sensors_collection.find({ "active": True}))
