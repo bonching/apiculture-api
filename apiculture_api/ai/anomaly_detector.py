@@ -158,6 +158,9 @@ class AnomalyDetector:
         alert['dataType'] = data_type
         alert['sensorValue'] = value
 
+        if data_type == 'bee_count' and 'imageId' in metric:
+            alert['imageId'] = metric['imageId']
+
         # Add contextual information if available
         if beehive_name:
             alert['beehiveName'] = beehive_name

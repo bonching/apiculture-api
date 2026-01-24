@@ -154,13 +154,14 @@ class DataCollectionSimulator:
         # Special handling for bee_count when --bee-counter flag is set
         if self.use_bee_counter and data_type['data_type'] != 'bee_count':
             logger.info("Using bee counter with actual image analysis")
-            value = self._count_bees_from_image(data_type['sensor_id'])
-            if value is not None:
+            count, image_id = self._count_bees_from_image(data_type['sensor_id'])
+            if count is not None:
                 data = [
                     {
                         'datetime': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
                         'dataTypeId': util.objectid_to_str(data_type['_id']),
-                        'value': value
+                        'value': count,
+                        'imageId': image_id
                     }
                 ]
                 logger.info(f"Bee count from image analysis: {str(data)}")
@@ -206,7 +207,7 @@ class DataCollectionSimulator:
     def _count_bees_from_image(self, sensor_id):
         """
         Select a random bee image and post it to the API for bee counting.
-        Returns the count from the API response.
+        Returns a tuple of (count, image_id) from the API response, or (None, None) on failure.
         """
         import os
         import glob
@@ -216,7 +217,7 @@ class DataCollectionSimulator:
 
         if not os.path.exists(bee_images_path):
             logger.error(f"Bee images folder not found: {bee_images_path}")
-            return None
+            return None, None
 
         # Get all image files (jpg, jpeg, png)
         image_patterns = ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.BMP']
@@ -226,7 +227,7 @@ class DataCollectionSimulator:
 
         if not image_files:
             logger.error(f"No bee images found in {bee_images_path}")
-            return None
+            return None, None
 
         # Select random image
         selected_image = random.choice(image_files)
@@ -257,12 +258,16 @@ class DataCollectionSimulator:
                 response_data = response.json()
                 logger.info(f"Image posted successfully: {response_data}")
 
-                # Extract bee count from response
+                # Extract bee count and image_id from response
+                image_id = response_data['image_id']
                 if 'bee_count' in response_data and response_data['bee_count']:
                     count = response_data['bee_count'].get('count')
-                    if count is not None:
-                        logger.info(f"Bee count from API: {count}")
-                        return count
+                    if count is not None and image_id is not None:
+                        logger.info(f"Bee count from API: {count}, Image ID: {image_id}")
+                        return count, image_id
+                    elif count is not None:
+                        logger.warning("No imageId found in response")
+                        return count, None
                     else:
                         logger.warning("No count found in bee_count response")
                 else:
@@ -275,7 +280,7 @@ class DataCollectionSimulator:
             import traceback
             traceback.print_exc()
 
-        return None
+        return None, None
 
 if __name__ == '__main__':
     """

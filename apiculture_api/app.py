@@ -252,6 +252,7 @@ def upload_image():
 
         if bee_count_result is not None:
             response['bee_count'] = image_doc['bee_count']
+            response['imageId'] = str(result.inserted_id)
 
         return jsonify(response), 201
     except Exception as e:
