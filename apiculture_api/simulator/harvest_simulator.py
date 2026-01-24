@@ -44,31 +44,37 @@ class HarvestSimulator:
         pass
 
     def run(self):
-        sensors = list(mongo.sensors_collection.find({ 'active': True, 'simulate': True, 'data_capture': 'honey_harvested'}))
-        logger.info(f'found: {len(sensors)} sensors')
+        sensor_id = '693b4c90943e75b9d619e139' # this sensor is not attached to any beehive (harvest sensor)
+        beehive_id = '693ad7c84739d5289a1e0835'
 
-        for sensor in sensors:
-            logger.info(f"sensor: {sensor}")
+        # Query the data_types collection to get the honey_harvested data type ID
+        data_type = mongo.data_types_collection.find_one({
+            'sensor_id': sensor_id,
+            'data_type': 'honey_harvested'
+        })
 
-            data_types = list(mongo.data_types_collection.find({'sensor_id': util.objectid_to_str(sensor['_id'])}))
-            logger.info(f'found: {len(data_types)} data_types')
+        if not data_type:
+            logger.info(f"Could not find honey_harvested data type for sensor {sensor_id}")
+            return
 
-            for data_type in data_types:
-                base_value = DATA_COLLECTION_METRICS[data_type['data_type']]['base_value']
-                variance = DATA_COLLECTION_METRICS[data_type['data_type']]['variance']
+        data_type_id = util.objectid_to_str(data_type['_id'])
+        logger.info(f"Found honey_harvested data type ID: {data_type_id}")
 
-                value = round(base_value + (random.random() * variance) * 10) / 10
-                data = [
-                    {
-                        'datetime': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
-                        'dataTypeId': util.objectid_to_str(data_type['_id']),
-                        'beehiveId': '693ad7c84739d5289a1e0833',
-                        'value': value
-                    }
-                ]
-                logger.info(f'Honey harvested: {str(data)}')
-                response = requests.post(f'http://{API_HOST}:{API_PORT}/api/metrics', json=data)
-                logger.info(response.json())
+        base_value = DATA_COLLECTION_METRICS['honey_harvested']['base_value']
+        variance = DATA_COLLECTION_METRICS['honey_harvested']['variance']
+
+        value = round(base_value + (random.random() * variance) * 10) / 10
+        data = [
+            {
+                'datetime': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
+                'dataTypeId': data_type_id,
+                'beehiveId': beehive_id,
+                'value': value
+            }
+        ]
+        logger.info(f'Honey harvested: {str(data)}')
+        response = requests.post(f'http://{API_HOST}:{API_PORT}/api/metrics', json=data)
+        logger.info(response.json())
 
 if __name__ == '__main__':
     HarvestSimulator().run()

@@ -72,21 +72,41 @@ def save_metrics(data):
             honey_unit = data_type.get('unit', 'g')
             beehiveId = data[0].get('beehiveId')
 
+            # Derive beehiveName and farmName from beehiveId
+            beehive_name = None
+            farm_name = None
+            farm_id = None
+
             message = f'New honey harvest recorded: {honey_value}{honey_unit}'
             if beehiveId:
                 hive = mongo.hives_collection.find_one({"_id": ObjectId(beehiveId)})
                 if hive:
-                    hive_name = hive.get('name', 'Unknown Hive')
-                    message = f'New honey harvest from {hive_name}: {honey_value}{honey_unit}'
+                    beehive_name = hive.get('name', 'Unknown Hive')
+                    farm = hive.get('farm_id')
+
+                    # Get farm name from farm_id
+                    if farm_id:
+                        farm = mongo.hives_collection.find_one({"_id": ObjectId(farm_id)})
+                        if farm:
+                            farm_name = farm.get('name', 'Unknown Farm')
+
+                    # Build detailed message
+                    if farm_name:
+                        message = f'New honey harvest from {beehive_name} at {farm_name}: {honey_value}{honey_unit}'
+                    else:
+                        message = f'New honey harvest from {beehive_name}: {honey_value}{honey_unit}'
 
             alert_event = {
                 'title': 'Honey Harvested',
                 'message': message,
                 'severity': 'info',
                 'beehiveId': beehiveId,
+                'beehiveName': beehive_name,
+                'farm_id': util.objectid_to_str(farm_id) if farm_id else None,
+                'farm_name': farm_name,
                 'dataType': "honey_harvested",
                 'alertType': "honey_harvested",
-                'sensorValue': 300
+                'sensorValue': honey_value
             }
             enqueue_sse(alert_event)
             logger.info(f"Enqueued honey harvest alert: {message}")
