@@ -32,6 +32,11 @@ logger.setLevel(logging.INFO)
 
 
 sse_queue = queue.Queue()
+
+# Track connected clients for reconnection
+connected_clients = {}
+client_counter = 0
+
 def enqueue_sse(event_data):
     """'Callback' to enqueue a new event from tasks."""
     logger.info(f"Enqueuing new SSE event: {event_data}")
@@ -45,39 +50,111 @@ def enqueue_sse(event_data):
     # Convert all ObjectIds to strings to ensure JSON serializability
     event_data = util.objectid_to_str(event_data)
 
-    sse_queue.put({"data": event_data})
+    sse_queue.put({"id": event_data['id'], "data": event_data})
 
-def generate_alerts():
+def generate_alerts(last_event_id=None):
     """
     Event-driven SSE generator: Blocks on queue.get() for new events (reactive).
     Sends heartbeats on timeout to keep connection alive.
+    Supports reconnection by sending missed events based on last_event_id.
     """
+    # If reconnecting, send missed events first
+    if last_event_id:
+        logger.info(f"Client reconnecting with Last-Event-Id: {last_event_id}")
+        try:
+            # Find all alerts created after the last event ID
+            last_alert = mongo.alerts_collection.find_one({"_id": ObjectId(last_event_id)})
+            if last_alert:
+                last_timestamp = last_alert.get('timestamp_ms')
+                # Get all alerts created after this timestamp
+                missed_alerts = list(mongo.alerts_collection.find({
+                    "timestamp_ms": {"$gt": last_timestamp}
+                }).sort("timestamp_ms", 1))
+
+                if missed_alerts:
+                    logger.info(f"Sending {len(missed_alerts)} missed events to reconnecting client")
+                    for alert in missed_alerts:
+                        alert_data = util.objectid_to_str(util.snake_to_camel(alert))
+                        yield f"id: {alert_data['id']}\n"
+                        yield f"data: {json.dumps(alert_data['data'])}\n\n"
+                else:
+                    logger.info("No missed events to send")
+            else:
+                logger.warning(f"Last event ID not found in database: {last_event_id}")
+        except Exception as e:
+            logger.error(f"Error sending missed events: {str(e)}")
+
+    # Now start streaming new events
     while True:
         try:
-            # Block until event arrives (timeout=1s for heartbeats)
-            event = sse_queue.get(timeout=5)
+            # Block until event arrives (timeout=30s for heartbeats)
+            event = sse_queue.get(timeout=30)
             logger.info(f"SSE event received: {event['data']}")
+            # Send event with ID for reconnection tracking
+            yield f"id: {event['id']}\n"
             yield f"data: {json.dumps(event['data'])}\n\n"
             sse_queue.task_done()  # Mark as processed (optional for cleanup)
         except queue.Empty:
-            # No event; send heartbeat
-            logger.info("No events in queue; sending heartbeat")
+            # No event; send heartbeat (comment format, no data)
+            logger.debug("No events in queue; sending heartbeat")
             yield ": heartbeat\n\n"
 
 @alerts_api.route('/sse/alerts')
 def alerts_sse_stream():
     """
     Event-driven SSE endpoint: Streams events enqueued by background tasks.
+    Supports automatic reconnection via Last-Event-ID header.
     """
+    global client_counter
+    client_counter += 1
+    client_id = client_counter
+
+    # Check if client is reconnecting (Last-Event-ID header)
+    last_event_id = request.headers.get('Last-Event-ID')
+    if not last_event_id:
+        # Also check X-Last-Event-ID (some clients use this)
+        last_event_id = request.headers.get('X-Last-Event-ID')
+
+    logger.info(f"SSE connection established (client #{client_id})")
+    if last_event_id:
+        logger.info(f"Client #{client_id} reconnecting with Last-Event-ID: {last_event_id}")
+
+    def stream_with_cleanup():
+        """Wrapper generator to handle cleanup on disconnect"""
+        try:
+            # Send initial retry configuration (3 seconds)
+            yield "retry: 3000\n\n"
+
+            # Send a connection established event
+            connection_event =  {
+                "alertType": "connection",
+                "severity": "info",
+                "message": "SSE connection established",
+                "timestampMs": datetime.now(timezone.utc).timestamp()
+            }
+            yield f"event: connected\n"
+            yield f"data: {json.dumps(connection_event)}\n\n"
+
+            # Start streaming alerts
+            for message in generate_alerts(last_event_id):
+                yield message
+        except GeneratorExit:
+            logger.info(f"SSE client #{client_id} disconnected")
+        except Exception as e:
+            logger.info(f"SSE client #{client_id} error: {str(e)}")
+
     response = Response(
-        generate_alerts(),
+        stream_with_cleanup(),
         mimetype='text/event-stream'
     )
-    response.headers['Content-Type'] = 'text/event-stream'  # Explicit override
+    response.headers['Content-Type'] = 'text/event-stream'
     response.headers['Cache-Control'] = 'no-cache'
     response.headers['Connection'] = 'keep-alive'
     response.headers['Access-Control-Allow-Origin'] = '*'
-    logger.info("SSE connection established - MIME: text/event-stream")  # Debug log
+    response.headers['Access-Control-Expose-Headers'] = 'Last-Event-ID'
+    response.headers['X-Accel-Buffering'] = 'no' # Disable nginx buffering
+
+    logger.info(f"SSE response configured for client #{client_id}")
     return response
 
 @alerts_api.route('/api/alerts/<id>', methods=['PUT'])
