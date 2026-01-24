@@ -160,35 +160,8 @@ def upload_image():
                 bee_count_result.bee_count,
                 bee_count_result.confidence
             )
-
-            # Save bee count as a metric if sensor_id is provided.
-            if sensor_id and bee_count_result:
-                try:
-                    # Find the bee_count data_type for this sensor
-                    data_type = mongo.data_types_collection.find_one({
-                        "sensor_id": sensor_id,
-                        "data_type": "bee_count"
-                    })
-
-                    if data_type:
-                        # Post bee count to metrics endpoint
-                        metric_data = [{
-                            "datetime": datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
-                            "dataTypeId": util.objectid_to_str(data_type['_id']),
-                            "value": int(bee_count_result.bee_count)
-                        }]
-
-                        from apiculture_api.util.config import API_HOST, API_PORT
-                        metrics_response = requests.post(
-                            f'http://{API_HOST}:{API_PORT}/api/metrics',
-                            json=metric_data
-                        )
-                        logger.info(f"Bee count metric saved: {metrics_response.json()}")
-                    else:
-                        logger.warning(f"No bee_count data_type found for sensor_id: {sensor_id}")
-                except Exception as e:
-                    logger.error(f"Failed to save bee count metric: {str(e)}")
-                    traceback.print_exc()
+            # Note: Metric saving is handled by the caller (e.g., data_collection_simulator)
+            # to avoid duplicate saves and allow proper anomaly detection flow
 
         # Create document with image data and metadata
         image_doc = {
