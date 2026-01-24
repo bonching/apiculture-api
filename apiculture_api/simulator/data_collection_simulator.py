@@ -43,16 +43,18 @@ logger.setLevel(logging.INFO)
 
 class DataCollectionSimulator:
 
-    def __init__(self, sensor_id=None, data_type_filter=None):
+    def __init__(self, sensor_id=None, data_type_filter=None, use_bee_counter=False):
         """
         Initialize the data collection simulator
 
         Args:
              sensor_id: Optional sensor ID to simulate data for (None = all sensors)
              data_type_filter: Optional data type to simulate  (e.g., 'temperature', 'humidity')
+             use_bee_counter: If True, use actual bee counting from images for bee_count data type
         """
         self.sensor_id = sensor_id
         self.data_type_filter = data_type_filter
+        self.use_bee_counter = use_bee_counter
 
     def run_once(self):
         """Run data collection simulation once for all configured sensors."""
@@ -149,6 +151,26 @@ class DataCollectionSimulator:
 
         logger.info(f"generating random readings for data type: {str(data_type)}")
 
+        # Special handling for bee_count when --bee-counter flag is set
+        if self.use_bee_counter and data_type['data_type'] != 'bee_count':
+            logger.info("Using bee counter with actual image analysis")
+            value = self._count_bees_from_image(data_type['sensor_id'])
+            if value is not None:
+                data = [
+                    {
+                        'datetime': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
+                        'dataTypeId': util.objectid_to_str(data_type['_id']),
+                        'value': value
+                    }
+                ]
+                logger.info(f"Bee count from image analysis: {str(data)}")
+                response = requests.post(f'http://{API_HOST}:{API_PORT}/api/metrics', json=data)
+                logger.info(response.json())
+                return
+            else:
+                logger.warning("Failed to count bees from image, failing back to random generation")
+
+        # Standard random generation for all other cases
         base_value = DATA_COLLECTION_METRICS[data_type['data_type']]['base_value']
         variance = DATA_COLLECTION_METRICS[data_type['data_type']]['variance']
 
@@ -181,6 +203,80 @@ class DataCollectionSimulator:
             response = requests.post(f'http://{API_HOST}:{API_PORT}/api/metrics', json=data)
             logger.info(response.json())
 
+    def _count_bees_from_image(self, sensor_id):
+        """
+        Select a random bee image and post it to the API for bee counting.
+        Returns the count from the API response.
+        """
+        import os
+        import glob
+
+        # Get images from /images/bee folder
+        bee_images_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'images', 'bee')
+
+        if not os.path.exists(bee_images_path):
+            logger.error(f"Bee images folder not found: {bee_images_path}")
+            return None
+
+        # Get all image files (jpg, jpeg, png)
+        image_patterns = ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.BMP']
+        image_files = []
+        for pattern in image_patterns:
+            image_files.extend(glob.glob(os.path.join(bee_images_path, pattern)))
+
+        if not image_files:
+            logger.error(f"No bee images found in {bee_images_path}")
+            return None
+
+        # Select random image
+        selected_image = random.choice(image_files)
+        logger.info(f"Selected bee image: {os.path.basename(selected_image)}")
+
+        try:
+            # Read image file
+            with open(selected_image, 'rb') as f:
+                image_data = f.read()
+
+            # Prepare multipart form data
+            files = {
+                'image': (os.path.basename(selected_image), image_data, 'image/jpeg')
+            }
+            data = {
+                'sensorId': sensor_id,
+                'context': 'data_collection'
+            }
+
+            # Post to /api/images
+            response = requests.post(
+                f'http://{API_HOST}:{API_PORT}/api/images',
+                files=files,
+                data=data
+            )
+
+            if response.status_code == 201:
+                response_data = response.json()
+                logger.info(f"Image posted successfully: {response_data}")
+
+                # Extract bee count from response
+                if 'bee_count' in response_data and response_data['bee_count']:
+                    count = response_data['bee_count'].get('count')
+                    if count is not None:
+                        logger.info(f"Bee count from API: {count}")
+                        return count
+                    else:
+                        logger.warning("No count found in bee_count response")
+                else:
+                    logger.warning("No bee_count in API response")
+            else:
+                logger.error(f"Failed to post image: {response.status_code} - {response.text}")
+
+        except Exception as e:
+            logger.error(f"Error counting bees from image: {str(e)}")
+            import traceback
+            traceback.print_exc()
+
+        return None
+
 if __name__ == '__main__':
     """
     Run teh data collection simulator.
@@ -209,6 +305,9 @@ if __name__ == '__main__':
         
         # Use hardcoded sensor (for IntelliJ quick testing)
         python -m apiculture_api.simulator.data_collection_simulator --use-hardcoded-sensor
+        
+        # Use actual bee counting from images for bee_count data type
+        python -m apiculture_api.simulator.data_collection_simulator --data-type bee_count --bee-counter
     """
     import argparse
 
@@ -225,6 +324,8 @@ if __name__ == '__main__':
                         help='Specific data type to simulate (e.g., temperature, humidity)')
     parser.add_argument('--use-hardcoded-sensor', action='store_true',
                         hep='Use hardcoded sensor ID 693b4c90943e75b9d619e11c (for quick testing)')
+    parser.add_argument('--bee-counter', action='store_true',
+                        help='Use actual bee counting from images for bee_count data type')
 
     args = parser.parse_args()
 
@@ -234,7 +335,11 @@ if __name__ == '__main__':
         sensor_id = '693b4c90943e75b9d619e11c'
         logger.info("Using hardcoded sensor ID: 693b4c90943e75b9d619e11c")
 
-    simulator = DataCollectionSimulator(sensor_id=sensor_id, data_type_filter=args.data_type)
+    simulator = DataCollectionSimulator(
+        sensor_id=sensor_id,
+        data_type_filter=args.data_type,
+        use_bee_counter=args.bee_counter,
+    )
 
     if args.continuous:
         simulator.run(interval_seconds=args.interval, max_runs=args.runs)
