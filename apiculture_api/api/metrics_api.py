@@ -70,7 +70,8 @@ def save_metrics(data):
         if data_type and data_type.get('data_type') == 'honey_harvested':
             honey_value = data[0].get('value', 0)
             honey_unit = data_type.get('unit', 'g')
-            beehiveId = data[0].get('beehiveId')
+            image_id = data[0].get('imageId')
+            beehive_id = data[0].get('beehiveId')
 
             # Derive beehiveName and farmName from beehiveId
             beehive_name = None
@@ -78,8 +79,8 @@ def save_metrics(data):
             farm_id = None
 
             message = f'New honey harvest recorded: {honey_value}{honey_unit}'
-            if beehiveId:
-                hive = mongo.hives_collection.find_one({"_id": ObjectId(beehiveId)})
+            if beehive_id:
+                hive = mongo.hives_collection.find_one({"_id": ObjectId(beehive_id)})
                 if hive:
                     beehive_name = hive.get('name', 'Unknown Hive')
                     farm = hive.get('farm_id')
@@ -100,7 +101,8 @@ def save_metrics(data):
                 'title': 'Honey Harvested',
                 'message': message,
                 'severity': 'info',
-                'beehiveId': beehiveId,
+                'imageId': image_id,
+                'beehiveId': beehive_id,
                 'beehiveName': beehive_name,
                 'farm_id': util.objectid_to_str(farm_id) if farm_id else None,
                 'farm_name': farm_name,

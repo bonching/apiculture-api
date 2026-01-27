@@ -163,6 +163,20 @@ def upload_image():
             # Note: Metric saving is handled by the caller (e.g., data_collection_simulator)
             # to avoid duplicate saves and allow proper anomaly detection flow
 
+        # Run honeypot analysis for harvest context
+        honeypot_result = None
+        if context == 'harvest':
+            from apiculture_api.ai.honeypots_analyzer import analyze_honeypots
+            honeypot_result = analyze_honeypots(image_data, content_type=image_file.content_type)
+            logger.info(
+                "Honeypot analysis result: detected=%s total=%s fill_percentage=%s confidence=%s",
+                honeypot_result.honeypots_detected,
+                honeypot_result.total_honeypots,
+                honeypot_result.filled_honeypots,
+                honeypot_result.fill_percentage,
+                honeypot_result.confidence
+            )
+
         # Create document with image data and metadata
         image_doc = {
             'filename': image_file.filename,
@@ -188,18 +202,32 @@ def upload_image():
                 'details': bee_count_result.details,
                 'analyzed_at': datetime.now(timezone.utc)
             }
+        if honeypot_result is not None:
+            image_doc['honeypot_analysis'] = {
+                'honeypots_detected': bool(honeypot_result.honeypots_detected),
+                'total_honeypots': int(honeypot_result.total_honeypots),
+                'filled_honeypots': int(honeypot_result.filled_honeypots),
+                'empty_honeypots': int(honeypot_result.total_honeypots - honeypot_result.filled_honeypots),
+                'fill_percentage': float(honeypot_result.fill_percentage),
+                'confidence': float(honeypot_result.confidence),
+                'grid_analysis': honeypot_result.grid_analysis,
+                'honeypot_locations': honeypot_result.honeypot_locations,
+                'details': honeypot_result.details,
+                'analyzed_at': datetime.now(timezone.utc)
+            }
 
         # Insert into MongoDB
         result = mongo.image_collection.insert_one(image_doc)
         logger.info(f"Successfully saved image {image_file.filename} with ID: {result.inserted_id}")
         response = {
             'message': 'Image uploaded successfully',
-            'inserted_id': str(result.inserted_id),
+            'imageId': str(result.inserted_id),
             'filename': image_file.filename
         }
 
         if predator_result is not None:
             response['predator_analysis'] = image_doc['predator_analysis']
+            response['imageId'] = str(result.inserted_id)
 
             # Only run sprinkler when a predator is actually detected.
             if predator_result.predator_detected:
@@ -252,7 +280,9 @@ def upload_image():
 
         if bee_count_result is not None:
             response['bee_count'] = image_doc['bee_count']
-            response['imageId'] = str(result.inserted_id)
+
+        if honeypot_result is not None:
+            response['honeypot_analysis'] = image_doc['honeypot_analysis']
 
         return jsonify(response), 201
     except Exception as e:
@@ -307,6 +337,13 @@ def get_image(image_id):
             # Convert analyzed_at to ISO format if present
             if 'analyzed_at' in image_doc['bee_count']:
                 response['bee_count']['analyzed_at'] = image_doc['bee_count']['analyzed_at'].isoformat()
+
+        # Include honeypot analysis if available
+        if 'honeypot_analysis' in image_doc:
+            response['honeypot_analysis'] = image_doc['honeypot_analysis']
+            # Convert analyzed_at to ISO format if present
+            if 'analyzed_at' in image_doc['honeypot_analysis']:
+                response['honeypot_analysis']['analyzed_at'] = image_doc['honeypot_analysis']['analyzed_at'].isoformat()
 
         # If the client wants the actual image data, include it as base64
         include_data = request.args.get('include_data', 'false').lower() == 'true'
