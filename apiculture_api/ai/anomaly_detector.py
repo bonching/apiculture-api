@@ -23,10 +23,23 @@ class AnomalyDetector:
         logger.info(f"[ANOMALY CHECK] Starting anomaly check for metric: dtaTypeId={data_type_id}, value={value}")
 
         data_type = mongo.data_types_collection.find_one({'_id': util.str_to_objectid(data_type_id)})
+
+        # Skip if data_type doesn't exist
+        if not data_type:
+            logger.warning(f"[ANOMALY CHECK] Data type not found for ID: {data_type_id}, skipping anomaly check")
+            return
+
         unit = data_type['unit']
         data_type_name = data_type['data_type']
 
         logger.info(f"[ANOMALY CHECK] Data type: {data_type_name}, unit={unit}")
+
+        # Check if anomaly_rate is 0, skip if so
+        if data_type_name in DATA_COLLECTION_METRICS:
+            anomaly_rate = DATA_COLLECTION_METRICS[data_type_name].get('anomaly_rate', 1)
+            if anomaly_rate == 0:
+                logger.info(f"[ANOMALY CHECK] Anomaly rate is 0 for {data_type_name}, skipping anomaly check")
+                return
 
         base_value = DATA_COLLECTION_METRICS[data_type_name]['base_value']
         variance = DATA_COLLECTION_METRICS[data_type_name]['variance']

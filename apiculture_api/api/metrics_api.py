@@ -126,88 +126,172 @@ def save_metrics(data):
 
 @metrics_api.route('/api/metrics/<beehive_id>/<data_capture>', methods=['GET'])
 def get_metrics(beehive_id, data_capture):
+    logger.info(f"beehive_id: {beehive_id}, data_capture: {data_capture}")
     try:
-        sensors = list(mongo.sensors_collection.find({ "beehive_id": beehive_id, "data_capture": util.camel_to_snake(data_capture)}))
+        data_capture_snake = util.camel_to_snake(data_capture)
 
-        # Return empty data if no sensors found
-        if not sensors:
-            logger.warning(f"No sensors found for beehive_id: {beehive_id}, data_capture: {data_capture}")
-            return jsonify({'data': []}), 200
+        # Special handling for honey_harvested data capture
+        if data_capture_snake == 'honey_harvested':
+            # For honey_harvested, we don't need sensors = query directly by data_type
+            data_type = mongo.data_types_collection.find_one({"data_type": data_capture_snake})
 
-        data_type = mongo.data_types_collection.find_one({"sensor_id": util.objectid_to_str(sensors[0]["_id"]), "data_type": util.camel_to_snake(data_capture)})
+            # Return empty data if no data_type found
+            if not data_type:
+                logger.warning(f"No data_type found for data_capture: {data_capture_snake}")
+                return jsonify({'data': []}), 200
 
-        # Return empty data if no data_type found
-        if not data_type:
-            logger.warning(f"No data_type found for sensor_id: {util.objectid_to_str(sensors[0]['_id'])}, data_type: {util.camel_to_snake(data_capture)}")
-            return jsonify({'data': []}), 200
+            data_type_id = util.objectid_to_str(data_type["_id"])
+            logger.info(f"data_type_id: {data_type_id}")
 
-        data_type_id = util.objectid_to_str(data_type["_id"])
-
-        pipeline = [
-            # Start with a single document to generate buckets from
-            {"$limit": 1},
-            {"$addFields": {"now": {"$toDate": "$$NOW"}}},
-            # Create array of hour indices (0 to 24)
-            {"$addFields": {"hour_indices": {"$range": [0, 25]}}},
-            # Unwind the array to create one doc per hour bucket
-            {"$unwind": {"path": "$hour_indices"}},
-            {"$addFields": {
-                "hour_bucket": {
-                    "$dateTrunc": {  # Truncate to start of hour for consistent bucketing
-                        "date": {
-                            "$dateSubtract": {
-                                "startDate": "$now",
-                                "unit": "hour",
-                                "amount": "$hour_indices"
-                            }
-                        },
-                        "unit": "hour",
-                        "timezone": "UTC"
-                    }
-                },
-                "time_num": "$hour_indices"
-            }},
-            {"$sort": {"time_num": -1}},  # Descending: 24hr (oldest) to 0hr (newest)
-            # Lookup hourly average value data for each bucket
-            {"$lookup": {
-                "from": "metrics",
-                "let": {"hb": "$hour_bucket", "now": "$now"},
-                "pipeline": [
-                    {"$match": {
-                        "$expr": {
-                            "$and": [
-                                {"$eq": [data_type_id, "$data_type_id"]},  # Exact match on string data_type_id
-                                {"$gte": ["$datetime",
-                                          {"$dateSubtract": {"startDate": "$$now", "unit": "hour", "amount": 24}}]},
-                                {"$eq": [{"$dateTrunc": {"date": "$datetime", "unit": "hour", "timezone": "UTC"}},
-                                         "$$hb"]}
-                            ]
+            pipeline = [
+                # Start with a single document to generate buckets from
+                {"$limit": 1},
+                {"$addFields": {"now": {"$toDate": "$$NOW"}}},
+                # Create array of 4-month period indices (0 to 14 = 15 periods for 5 years)
+                {"$addFields": {"period_indices": {"$range": [0, 15]}}},
+                # Unwind the array to create one doc per 4-month period
+                {"$unwind": {"path": "$period_indices"}},
+                {"$addFields": {
+                    "period_end": {
+                        "$dateSubtract": {
+                            "startDate": "$now",
+                            "unit": "month",
+                            "amount": {"$multiply": ["$period_indices", 4]}
                         }
-                    }},
-                    # No parsing needed: Use direct 'value' field (numeric)
-                    {"$group": {
-                        "_id": None,
-                        "avg_value": {"$avg": "$value"}  # Direct average on 'value' field
-                    }}
-                ],
-                "as": "avg_data"
-            }},
-            # Extract average (default to null if no data)
-            {"$addFields": {
-                "avg_value": {"$ifNull": [{"$arrayElemAt": ["$avg_data.avg_value", 0]}, None]}
-            }},
-            # Format output
-            {"$addFields": {
-                "value": {"$round": ["$avg_value", 1]},
-                "time": {"$concat": [{"$toString": "$time_num"}, "hr"]}
-            }},
-            # Final projection: Use only inclusions to avoid mix of 0/1
-            {"$project": {
-                "_id": 0,
-                "time": 1,
-                "value": 1
-            }}
-        ]
+                    },
+                    "period_start": {
+                        "$dateSubtract": {
+                            "startDate": "$now",
+                            "unit": "month",
+                            "amount": {"$multiply": [{"$add": ["$period_indices", 1]}, 4]}
+                        }
+                    },
+                    "period_num": "$period_indices"
+                }},
+                {"$sort": {"period_num": -1}},  # Descending: oldest to newest
+                # Lookup sum of honey harvested for each 4-month period
+                {"$lookup": {
+                    "from": "metrics",
+                    "let": {"ps": "$period_start", "pe": "$period_end", "now": "$now", "pnum": "$period_num"},
+                    "pipeline": [
+                        {"$match": {
+                            "$expr": {
+                                "$and": [
+                                    {"$eq": [data_type_id, "$data_type_id"]},
+                                    {"eq": ["$beehive_id", beehive_id]},
+                                    {"$gte": ["$datetime", {"$dateSubtract": {"startDate": "$$now", "unit": "year", "amount": 5}}]},
+                                    {"gt": ["$datetime", "$$ps"]},
+                                    {"$lte": ["$datetime", "$$pe"]}
+                                ]
+                            }
+                        }},
+                        {"$group": {
+                            "_id": None,
+                            "total_value": {"$sum": "$value"}
+                        }}
+                    ],
+                    "as": "period_data"
+                }},
+                # Extract total (default to null if no data)
+                {"$addFields": {
+                    "total_value": {"$ifNull": [{"$arrayElemAt": ["$period_data.total_value", 0]}, None]}
+                }},
+                # Format output
+                {"$addFields": {
+                    "value": {"$round": ["$total_value", 1]},
+                    "time": {"$concat": [{"$toString": {"$multiply": ["$period_num", 4]}}, "mo"]}
+                }},
+                # Final projection
+                {"$project": {
+                    "_id": 0,
+                    "time": 1,
+                    "value": 1
+                }}
+            ]
+        else:
+            # For other data captures, we need to query by sensor_id
+            sensors = list(mongo.sensors_collection.find({ "beehive_id": beehive_id, "data_capture": util.camel_to_snake(data_capture)}))
+
+            # Return empty data if no sensors found
+            if not sensors:
+                logger.warning(f"No sensors found for beehive_id: {beehive_id}, data_capture: {data_capture}")
+                return jsonify({'data': []}), 200
+
+            data_type = mongo.data_types_collection.find_one({"sensor_id": util.objectid_to_str(sensors[0]["_id"]), "data_type": util.camel_to_snake(data_capture)})
+
+            # Return empty data if no data_type found
+            if not data_type:
+                logger.warning(f"No data_type found for sensor_id: {util.objectid_to_str(sensors[0]['_id'])}, data_type: {util.camel_to_snake(data_capture)}")
+                return jsonify({'data': []}), 200
+
+            data_type_id = util.objectid_to_str(data_type["_id"])
+            logger.info(f"data_type_id: {data_type_id}")
+            # Original pipline for other data captures (24-hour aggregation)
+            pipeline = [
+                # Start with a single document to generate buckets from
+                {"$limit": 1},
+                {"$addFields": {"now": {"$toDate": "$$NOW"}}},
+                # Create array of hour indices (0 to 24)
+                {"$addFields": {"hour_indices": {"$range": [0, 25]}}},
+                # Unwind the array to create one doc per hour bucket
+                {"$unwind": {"path": "$hour_indices"}},
+                {"$addFields": {
+                    "hour_bucket": {
+                        "$dateTrunc": {  # Truncate to start of hour for consistent bucketing
+                            "date": {
+                                "$dateSubtract": {
+                                    "startDate": "$now",
+                                    "unit": "hour",
+                                    "amount": "$hour_indices"
+                                }
+                            },
+                            "unit": "hour",
+                            "timezone": "UTC"
+                        }
+                    },
+                    "time_num": "$hour_indices"
+                }},
+                {"$sort": {"time_num": -1}},  # Descending: 24hr (oldest) to 0hr (newest)
+                # Lookup hourly average value data for each bucket
+                {"$lookup": {
+                    "from": "metrics",
+                    "let": {"hb": "$hour_bucket", "now": "$now"},
+                    "pipeline": [
+                        {"$match": {
+                            "$expr": {
+                                "$and": [
+                                    {"$eq": [data_type_id, "$data_type_id"]},  # Exact match on string data_type_id
+                                    {"$gte": ["$datetime",
+                                              {"$dateSubtract": {"startDate": "$$now", "unit": "hour", "amount": 24}}]},
+                                    {"$eq": [{"$dateTrunc": {"date": "$datetime", "unit": "hour", "timezone": "UTC"}},
+                                             "$$hb"]}
+                                ]
+                            }
+                        }},
+                        # No parsing needed: Use direct 'value' field (numeric)
+                        {"$group": {
+                            "_id": None,
+                            "avg_value": {"$avg": "$value"}  # Direct average on 'value' field
+                        }}
+                    ],
+                    "as": "avg_data"
+                }},
+                # Extract average (default to null if no data)
+                {"$addFields": {
+                    "avg_value": {"$ifNull": [{"$arrayElemAt": ["$avg_data.avg_value", 0]}, None]}
+                }},
+                # Format output
+                {"$addFields": {
+                    "value": {"$round": ["$avg_value", 1]},
+                    "time": {"$concat": [{"$toString": "$time_num"}, "hr"]}
+                }},
+                # Final projection: Use only inclusions to avoid mix of 0/1
+                {"$project": {
+                    "_id": 0,
+                    "time": 1,
+                    "value": 1
+                }}
+            ]
 
         metrics = util.snake_to_camel_key(util.objectid_to_str(list(mongo.metrics_collection.aggregate(pipeline))))
         logger.info(f'data: {metrics}')
