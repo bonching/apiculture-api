@@ -201,10 +201,10 @@ class HarvestSimulator:
                 for position, data in grid.items():
                     if data.get('total', 0) > 0:
                         logger.info(f"    - {position.replace('_', ' ').title()}: "
-                                    f"{data['filled']}/{data['total']} filled "
-                                    f"({data['fill_percentage']}%)")
-            else:
-                logger.warning(f"  No honeypot analysis in response")
+                                  f"{data['filled']}/{data['total']} filled "
+                                  f"({data['fill_percentage']}%)")
+        else:
+            logger.warning(f"  No honeypot analysis in response")
 
 if __name__ == '__main__':
     HarvestSimulator().run()
