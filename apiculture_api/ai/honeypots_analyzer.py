@@ -32,7 +32,7 @@ class HoneypotsAnalyzer:
     """
     Analyzes beehive images to detect and locate honeypots (honeycomb cells).
     Assumes top-down view of beehive box with camera at the top center.
-    Calculate 3D positions relative to the center of the beehive box.
+    Calculates 3D positions relative to the center of the beehive box.
     """
 
     def __init__(self, model_path: Optional[str] = None,
@@ -106,65 +106,66 @@ class HoneypotsAnalyzer:
         Detects hexagonal honeycomb patterns and determines fill status.
         """
         try:
-             # Decode image
-             arr = np.frombuffer(image_bytes, dtype=np.uint8)
-             img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+            # Decode image
+            arr = np.frombuffer(image_bytes, dtype=np.uint8)
+            img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
 
-             if img is None:
-                 return HoneypotDetectionResult(
-                     honeypots_detected=False,
-                     total_honeypots=0,
-                     filled_honeypots=0,
-                     empty_honeypots=0,
-                     fill_percentage=0.0,
-                     confidence=0.0,
-                     honeypot_locations=[],
-                     grid_analysis={},
-                     details={'method': 'heuristic_cv', 'reason': 'failed to decode image'}
-                 )
+            if img is None:
+                return HoneypotDetectionResult(
+                    honeypots_detected=False,
+                    total_honeypots=0,
+                    filled_honeypots=0,
+                    empty_honeypots=0,
+                    fill_percentage=0.0,
+                    confidence=0.0,
+                    honeypot_locations=[],
+                    grid_analysis={},
+                    details={'method': 'heuristic_cv', 'reason': 'failed to decode image'}
+                )
 
-             height, width = img.shape[:2]
-             logger.info(f"Analyzing image: {width}x{height}")
+            height, width = img.shape[:2]
+            logger.info(f"Analyzing image: {width}x{height}")
 
-             # Convert to grayscale and HSV for analysis
-             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-             hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+            # Convert to grayscale and HSV for analysis
+            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-             # Detect honeycomb cells using contour detection
-             honeypot_locations = self._detect_honeycomb_cells(img, gray, hsv)
+            # Detect honeycomb cells using contour detection
+            honeypot_locations = self._detect_honeycomb_cells(img, gray, hsv)
 
-             # Classify cells as filled or empty
-             filled_cells, empty_cells = self._classify_cells(img, hsv, honeypot_locations)
+            # Classify cells as filled or empty
+            filled_cells, empty_cells = self._classify_cells(img, hsv, honeypot_locations)
 
-             total_honeypots = len(honeypot_locations)
-             filled_honeypots = len(filled_cells)
-             empty_honeypots = len(empty_cells)
-             fill_percentage = (filled_honeypots / total_honeypots * 100) if total_honeypots > 0 else 0.0
+            total_honeypots = len(honeypot_locations)
+            filled_honeypots = len(filled_cells)
+            empty_honeypots = len(empty_cells)
+            fill_percentage = (filled_honeypots / total_honeypots * 100) if total_honeypots > 0 else 0.0
 
-             # Grid analysis - divide image into regions
-             grid_analysis = self._analyze_grid_distribution(honeypot_locations, filled_cells, empty_cells, width, height)
+            # Grid analysis - divide image into regions
+            grid_analysis = self._analyze_grid_distribution(honeypot_locations, filled_cells, empty_cells, width,
+                                                            height)
 
-             # Calculate confidence based on detection quality
-             confidence = self._calculate_confidence(honeypot_locations, img)
+            # Calculate confidence based on detection quality
+            confidence = self._calculate_confidence(honeypot_locations, img)
 
-             logger.info(f"Detected {total_honeypots} honeypots ({filled_honeypots} filled, {empty_honeypots} empty)")
+            logger.info(f"Detected {total_honeypots} honeypots ({filled_honeypots} filled, {empty_honeypots} empty)")
 
-             return HoneypotDetectionResult(
-                 honeypots_detected=total_honeypots > 0,
-                 total_honeypots=total_honeypots,
-                 filled_honeypots=filled_honeypots,
-                 empty_honeypots=empty_honeypots,
-                 fill_percentage=round(fill_percentage, 2),
-                 confidence=round(confidence, 2),
-                 honeypot_locations=honeypot_locations,
-                 grid_analysis=grid_analysis,
-                 details={
-                     'method': 'heuristic_cv',
-                     'description': 'Hexagonal contour detection with HSV-based fill classification',
-                     'image_size': f'{width}x{height}',
-                     'content_type': content_type
-                 }
-             )
+            return HoneypotDetectionResult(
+                honeypots_detected=total_honeypots > 0,
+                total_honeypots=total_honeypots,
+                filled_honeypots=filled_honeypots,
+                empty_honeypots=empty_honeypots,
+                fill_percentage=round(fill_percentage, 2),
+                confidence=round(confidence, 2),
+                honeypot_locations=honeypot_locations,
+                grid_analysis=grid_analysis,
+                details={
+                    'method': 'heuristic_cv',
+                    'description': 'Hexagonal contour detection with HSV-based fill classification',
+                    'image_size': f'{width}x{height}',
+                    'content_type': content_type
+                }
+            )
 
         except Exception as e:
             logger.error(f"Error in honeypot analysis: {str(e)}")
@@ -185,7 +186,7 @@ class HoneypotsAnalyzer:
     def _detect_honeycomb_cells(self, img, gray, hsv) -> List[Dict]:
         """
         Detect individual honeycomb cells using contour detection.
-        Returns a list of cell locations with coordinates.
+        Returns list of cell locations with coordinates.
         """
         honeypot_locations = []
 
@@ -354,7 +355,7 @@ class HoneypotsAnalyzer:
         # Calculate fill percentage for each grid position
         for position, data in grid.items():
             if data['total'] > 0:
-                data['fill_percentage'] = round(data['filled'] / data['total'] * 100, 2)
+                data['fill_percentage'] = round((data['filled'] / data['total']) * 100, 2)
             else:
                 data['fill_percentage'] = 0.0
 

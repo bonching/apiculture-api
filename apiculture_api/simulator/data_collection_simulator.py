@@ -49,7 +49,7 @@ class DataCollectionSimulator:
 
         Args:
             sensor_id: Optional sensor ID to simulate data for (None = all sensors)
-            data_type_filter: Optional data type to simulate  (e.g., 'temperature', 'humidity')
+            data_type_filter: Optional data type to simulate (e.g., 'temperature', 'humidity')
             use_bee_counter: If True, use actual bee counting from images for bee_count data type
         """
         self.sensor_id = sensor_id
@@ -259,7 +259,7 @@ class DataCollectionSimulator:
                 logger.info(f"Image posted successfully: {response_data}")
 
                 # Extract bee count and image_id from response
-                image_id = response_data['imageId']
+                image_id = response_data.get('imageId')
                 if 'bee_count' in response_data and response_data['bee_count']:
                     count = response_data['bee_count'].get('count')
                     if count is not None and image_id is not None:

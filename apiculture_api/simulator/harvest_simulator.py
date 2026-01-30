@@ -103,7 +103,7 @@ class HarvestSimulator:
         try:
             # If no image path provided, select random image from honeypots folder
             if not image_path or image_path == '':
-                honeypots_dir = Path(__file__).parent.parent / "images" / "honeypots"
+                honeypots_dir = Path(__file__).parent.parent.parent / "images" / "honeypots"
 
                 if not honeypots_dir.exists():
                     logger.error(f"Honeypots images directory not found: {honeypots_dir}")
@@ -111,8 +111,8 @@ class HarvestSimulator:
 
                 # Get list of honeypot images
                 honeypot_images = list(honeypots_dir.glob("*.jpg")) + \
-                                  list(honeypots_dir.glob("*.jpeg")) + \
-                                  list(honeypots_dir.glob("*.png"))
+                                 list(honeypots_dir.glob("*.jpeg")) + \
+                                 list(honeypots_dir.glob("*.png"))
 
                 if not honeypot_images:
                     logger.error(f"No honeypot images found in: {honeypots_dir}")
@@ -181,7 +181,7 @@ class HarvestSimulator:
 
         if 'honeypot_analysis' in result:
             analysis = result['honeypot_analysis']
-            logger.info(f"\nHoneypot Analysis:")
+            logger.info(f"\n  Honeypot Analysis:")
             logger.info(f"    - Honeypots Detected: {analysis.get('honeypots_detected')}")
             logger.info(f"    - Total Honeypots: {analysis.get('total_honeypots')}")
             logger.info(f"    - Filled: {analysis.get('filled_honeypots')}")
@@ -202,7 +202,7 @@ class HarvestSimulator:
                     if data.get('total', 0) > 0:
                         logger.info(f"    - {position.replace('_', ' ').title()}: "
                                     f"{data['filled']}/{data['total']} filled "
-                                    f"({data['fill_percentage']:%})")
+                                    f"({data['fill_percentage']}%)")
             else:
                 logger.warning(f"  No honeypot analysis in response")
 

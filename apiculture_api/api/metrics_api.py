@@ -178,9 +178,9 @@ def get_metrics(beehive_id, data_capture):
                             "$expr": {
                                 "$and": [
                                     {"$eq": [data_type_id, "$data_type_id"]},
-                                    {"eq": ["$beehive_id", beehive_id]},
+                                    {"$eq": ["$beehive_id", beehive_id]},
                                     {"$gte": ["$datetime", {"$dateSubtract": {"startDate": "$$now", "unit": "year", "amount": 5}}]},
-                                    {"gt": ["$datetime", "$$ps"]},
+                                    {"$gt": ["$datetime", "$$ps"]},
                                     {"$lte": ["$datetime", "$$pe"]}
                                 ]
                             }
@@ -210,7 +210,7 @@ def get_metrics(beehive_id, data_capture):
             ]
         else:
             # For other data captures, we need to find sensors first
-            sensors = list(mongo.sensors_collection.find({ "beehive_id": beehive_id, "data_capture": data_capture_snake}))
+            sensors = list(mongo.sensors_collection.find({"beehive_id": beehive_id, "data_capture": data_capture_snake}))
 
             # Return empty data if no sensors found
             if not sensors:

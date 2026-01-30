@@ -308,4 +308,4 @@ if __name__ == '__main__':
     if args.continuous:
         simulator.run(interval_seconds=args.interval, max_runs=args.runs)
     else:
-        simulator.run_once(image_name=args.image, sensor_id=args.sensor_id)
+        simulator.run_once(image_name=args.image, sensor_id=sensor_id)

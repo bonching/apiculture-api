@@ -336,7 +336,7 @@ def get_latest_image():
 
         # Build response with metadata
         response = {
-            'id': str(image_doc.get('_id')),
+            'id': str(image_doc['_id']),
             'filename': image_doc.get('filename'),
             'sensor_id': image_doc.get('sensor_id'),
             'content_type': image_doc.get('content_type'),
@@ -406,7 +406,7 @@ def get_image(image_id):
 
         # Build response with metadata
         response = {
-            'id': image_doc.get('_id'),
+            'id': str(image_doc['_id']),
             'filename': image_doc.get('filename'),
             'sensor_id': image_doc.get('sensor_id'),
             'content_type': image_doc.get('content_type'),
@@ -416,7 +416,7 @@ def get_image(image_id):
 
         # Include predator analysis if available
         if 'predator_analysis' in image_doc:
-            response['predator_analysis'] = util.objectid_to_str(image_doc['predator_analysis'])
+            response['predator_analysis'] = image_doc['predator_analysis']
             # Convert analyzed_at to ISO format if present
             if 'analyzed_at' in response['predator_analysis']:
                 response['predator_analysis']['analyzed_at'] = response['predator_analysis']['analyzed_at'].isoformat()

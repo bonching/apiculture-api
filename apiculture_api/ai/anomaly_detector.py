@@ -50,7 +50,7 @@ class AnomalyDetector:
             logger.warning(f"[ANOMALY DETECTED] {data_type_name} HIGH: {value} > {base_value + variance}")
             self.generate_alert_message(data_type_name, 'high', value, unit, metric, data_type)
         elif value < base_value - variance:
-            logger.warning(f"[ANOMALY DETECTED] {data_type_name} LOW: {value} > {base_value - variance}")
+            logger.warning(f"[ANOMALY DETECTED] {data_type_name} LOW: {value} < {base_value - variance}")
             self.generate_alert_message(data_type_name, 'low', value, unit, metric, data_type)
         else:
             logger.info(f"[ANOMALY CHECK] {data_type_name} value {value} is within normal range - NO ALERT")
@@ -161,7 +161,7 @@ class AnomalyDetector:
 
         logger.info(f"[ALERT GENERATION] Checking if template exists for quantifier: {quantifier}")
         if quantifier not in ANOMALY_MESSAGE_TEMPLATE[data_type]:
-            logger.warning(f"[ALERT GENERATION] No template found for quantifier: {quantifier} in data_type {data_type} - SKIPPING ALERT")
+            logger.warning(f"[ALERT GENERATION] No template found for quantifier: {quantifier} in {data_type} - SKIPPING ALERT")
             return
 
         alert = ANOMALY_MESSAGE_TEMPLATE[data_type][quantifier].copy()
