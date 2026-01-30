@@ -142,7 +142,7 @@ class HoneypotsAnalyzer:
             fill_percentage = (filled_honeypots / total_honeypots * 100) if total_honeypots > 0 else 0.0
 
             # Grid analysis - divide image into regions
-            grid_analysis = self._analyze_grid_distribution(honeypot_locations, filled_cells, empty_cells, width, height)
+            grid_analysis = self._analyze_grid_distribution(honeypot_locations, filled_cells, width, height)
 
             # Calculate confidence based on detection quality
             confidence = self._calculate_confidence(honeypot_locations, img)
