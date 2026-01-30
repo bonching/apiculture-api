@@ -31,7 +31,7 @@ class TestMetricsApi(unittest.TestCase):
         self.assertEqual(data['message'], 'Data saved successfully')
         self.assertIn('data', data)
 
-    def test_save_and_Get_honey_harvested_metrics(self):
+    def test_save_and_get_honey_harvested_metrics(self):
         """Test saving and retrieving honey harvested metrics with data spanning past 5 years."""
         beehive_id = '693ad7c84739d5289a1e0835'  # Gamma beehive
         sensor_id = '693b4c90943e75b9d619e11c'
@@ -43,8 +43,8 @@ class TestMetricsApi(unittest.TestCase):
         mongo = ApicultureMongoClient()
         try:
             data_type = (
-                mongo.data_types_collection.find_one({'sensor_id': sensor_id, 'data_type': 'honey_harvested'})
-                or mongo.data_types_collection.find_one({'data_type': 'honey_harvested'})
+                mongo.data_types_collection.find_one({"sensor_id": sensor_id, "data_type": "honey_harvested"})
+                or mongo.data_types_collection.find_one({"data_type": "honey_harvested"})
             )
             self.assertIsNotNone(
                 data_type, (
@@ -52,7 +52,7 @@ class TestMetricsApi(unittest.TestCase):
                     "(sensor_id + honey_harvested), (global honey_harvested)"
                 )
             )
-            data_type_id = util.objectid_to_str(data_type['_id'])
+            data_type_id = util.objectid_to_str(data_type["_id"])
         finally:
             mongo.close()
 
@@ -62,7 +62,7 @@ class TestMetricsApi(unittest.TestCase):
         now = datetime.now(timezone.utc)
 
         # Generate data for 15 periods (5 years = 60 months / 4 = 15 periods)
-        for period in range (15):
+        for period in range(15):
             # Calculate months ago for this period
             months_ago_start = period * 4
             months_ago_end = (period + 1) * 4
@@ -70,11 +70,11 @@ class TestMetricsApi(unittest.TestCase):
             # Add 2-3 entries per period to simulate multiple harvests
             for entry in range(2):
                 # Calculate a date within this period
-                months_offset = months_ago_start + (entry * 1)
+                months_offset = months_ago_start + (entry + 1)
 
                 # Create a datetime by subtracting months
                 # Approximate: 30 days per month
-                days_offset = months_offset *30
+                days_offset = months_offset * 30
                 entry_date = now - timedelta(days=days_offset)
 
                 # Vary the harvest amounts (50-150 kg range)
@@ -82,7 +82,7 @@ class TestMetricsApi(unittest.TestCase):
 
                 metrics_data.append({
                     'datetime': entry_date.isoformat(),
-                    'dataTypeId': sensor_id,
+                    'dataTypeId': data_type_id,
                     'beehiveId': beehive_id,
                     'value': value
                 })
@@ -118,9 +118,9 @@ class TestMetricsApi(unittest.TestCase):
 
         # Verify the structure of returned data
         for period in periods:
-            self.assertIn('datetime', period)
+            self.assertIn('time', period)
             self.assertIn('value', period)
-            # Time should be in format "0mo", "4mo", "8mo", etc."
+            # Time should be in format "0mo", "4mo", "8mo", etc.
             self.assertTrue(period['time'].endswith('mo'))
 
         # API returns oldest -> newest (56mo ... 0mo)
@@ -130,8 +130,8 @@ class TestMetricsApi(unittest.TestCase):
         self.assertEqual(periods[-1]['time'], '0mo')
 
         print(f"\n Successfully retrieved {len(periods)}  4-month periods of honey harvest data.")
-        print(f"   Time range: {periods[0]['time']} - {periods[-1]['time']}")
-        print(f"   Sample data: {periods[0]}")
+        print(f"  Time range: {periods[0]['time']} to {periods[-1]['time']}")
+        print(f"  Sample data: {periods[0]}")
 
 
     def test_get_metrics(self):

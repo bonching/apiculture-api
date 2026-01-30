@@ -1,6 +1,5 @@
 import sys
 import traceback
-from crypt import methods
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
@@ -170,7 +169,7 @@ def upload_image():
             from apiculture_api.ai.honeypots_analyzer import analyze_honeypots
             honeypot_result = analyze_honeypots(image_data, content_type=image_file.content_type)
             logger.info(
-                "Honeypot analysis result: detected=%s total=%s fill_percentage=%s confidence=%s",
+                "Honeypot analysis result: detected=%s total=%s filled=%s fill_percentage=%s%% confidence=%s",
                 honeypot_result.honeypots_detected,
                 honeypot_result.total_honeypots,
                 honeypot_result.filled_honeypots,
@@ -208,7 +207,7 @@ def upload_image():
                 'honeypots_detected': bool(honeypot_result.honeypots_detected),
                 'total_honeypots': int(honeypot_result.total_honeypots),
                 'filled_honeypots': int(honeypot_result.filled_honeypots),
-                'empty_honeypots': int(honeypot_result.total_honeypots - honeypot_result.filled_honeypots),
+                'empty_honeypots': int(honeypot_result.empty_honeypots),
                 'fill_percentage': float(honeypot_result.fill_percentage),
                 'confidence': float(honeypot_result.confidence),
                 'grid_analysis': honeypot_result.grid_analysis,
@@ -259,7 +258,7 @@ def upload_image():
                         "message": f"A {predator_type} has been detected with {confidence_pct}% confidence. Defense systems activated.",
                         "imageId": str(result.inserted_id),
                         "details": {
-                            "predatorDetectionMethod": predator_result.details.get("description")
+                          "predatorDetectionMethod": predator_result.details.get("description")
                         },
                         "timestampMs": datetime.now(timezone.utc)
                     }
@@ -290,6 +289,7 @@ def upload_image():
         logger.error(f"Failed to save image: {str(e)}")
         return jsonify({'error': f'Failed to save image: {str(e)}'}), 500
 
+
 @app.route('/api/images', methods=['GET'])
 def get_latest_image():
     """
@@ -317,26 +317,26 @@ def get_latest_image():
             # Find all sensors for this beehive
             sensors = list(mongo.sensors_collection.find({"beehive_id": beehive_id}))
             if sensors:
-                sensor_ids = [util.objectid_to_str(sensor["_id"]) for sensor in sensors]
+                sensor_ids = [util.objectid_to_str(sensor['_id']) for sensor in sensors]
                 query_filter['sensor_id'] = {'$in': sensor_ids}
             else:
                 # No sensors found for this beehive, return empty result
-                logger.warning(f"No sensors found for beehive {beehive_id}")
+                logger.warning(f"No sensors found for beehive_id: {beehive_id}")
                 return jsonify({'error': 'No sensors found for the specified beehive'}), 404
 
         # Find the latest image matching the filter
-        image_doc = mongo.image_collection.find(
+        image_doc = mongo.image_collection.find_one(
             query_filter,
-            sorted([("upload_time", -1)])  # Sort by upload_time ascending to get latest
+            sort=[('upload_time', -1)]  # Sort by upload_time descending to get latest
         )
 
         if not image_doc:
-            logger.warning(f"No images found matching filter: {query_filter}")
-            return jsonify({'error': 'No images found matching the criteria'}), 404
+            logger.warning(f"No image found matching filter: {query_filter}")
+            return jsonify({'error': 'No image found matching the criteria'}), 404
 
         # Build response with metadata
         response = {
-            'id': str(image_doc.get('id')),
+            'id': str(image_doc.get('_id')),
             'filename': image_doc.get('filename'),
             'sensor_id': image_doc.get('sensor_id'),
             'content_type': image_doc.get('content_type'),
@@ -348,28 +348,28 @@ def get_latest_image():
         if 'predator_analysis' in image_doc:
             response['predator_analysis'] = image_doc['predator_analysis']
             # Convert analyzed_at to ISO format if present
-            if 'analyzed_at' in image_doc['predator_analysis']:
-                response['predator_analysis']['analyzed_at'] = image_doc['predator_analysis']['analyzed_at'].isoformat()
+            if 'analyzed_at' in response['predator_analysis']:
+                response['predator_analysis']['analyzed_at'] = response['predator_analysis']['analyzed_at'].isoformat()
 
         # Include bee count if available
         if 'bee_count' in image_doc:
             response['bee_count'] = image_doc['bee_count']
             # Convert analyzed_at to ISO format if present
-            if 'analyzed_at' in image_doc['bee_count']:
-                response['bee_count']['analyzed_at'] = image_doc['bee_count']['analyzed_at'].isoformat()
+            if 'analyzed_at' in response['bee_count']:
+                response['bee_count']['analyzed_at'] = response['bee_count']['analyzed_at'].isoformat()
 
         # Include honeypot analysis if available
         if 'honeypot_analysis' in image_doc:
             response['honeypot_analysis'] = image_doc['honeypot_analysis']
             # Convert analyzed_at to ISO format if present
-            if 'analyzed_at' in image_doc['honeypot_analysis']:
-                response['honeypot_analysis']['analyzed_at'] = image_doc['honeypot_analysis']['analyzed_at'].isoformat()
+            if 'analyzed_at' in response['honeypot_analysis']:
+                response['honeypot_analysis']['analyzed_at'] = response['honeypot_analysis']['analyzed_at'].isoformat()
 
         # If the client wants the actual image data, include it as base64
         include_data = request.args.get('include_data', 'false').lower() == 'true'
         if include_data and 'data' in image_doc:
             import base64
-            response['data'] = base64.b64decode(image_doc['data']).decode('utf-8')
+            response['data'] = base64.b64encode(image_doc['data']).decode('utf-8')
 
         logger.info(f"Successfully retrieved latest image: {response['id']}")
         return jsonify(response), 200
@@ -383,7 +383,7 @@ def get_latest_image():
 @app.route('/api/images/<image_id>', methods=['GET'])
 def get_image(image_id):
     """
-    Endpoint to retrieve an image bu its ID.
+    Endpoint to retrieve an image by its ID.
     Returns the image metadata and optionally the image data.
     """
     logger.info(f"Received GET request to /api/images/{image_id} from {request.remote_addr}")
@@ -406,48 +406,49 @@ def get_image(image_id):
 
         # Build response with metadata
         response = {
-            'id': image_doc.get('id'),
+            'id': image_doc.get('_id'),
             'filename': image_doc.get('filename'),
             'sensor_id': image_doc.get('sensor_id'),
             'content_type': image_doc.get('content_type'),
-            'upload_time': image_doc.get('upload_time'),
-            'context': image_doc.get('context'),
+            'upload_time': image_doc.get('upload_time').isoformat() if image_doc.get('upload_time') else None,
+            'context': image_doc.get('context')
         }
 
-        # Include details if available
-        if 'details' in image_doc:
-            response['details'] = util.objectid_to_str(image_doc['details'])
+        # Include predator analysis if available
+        if 'predator_analysis' in image_doc:
+            response['predator_analysis'] = util.objectid_to_str(image_doc['predator_analysis'])
             # Convert analyzed_at to ISO format if present
-            if 'analyzed_at' in image_doc['details']:
-                response['details']['analyzed_at'] = image_doc['details']['analyzed_at'].isoformat()
+            if 'analyzed_at' in response['predator_analysis']:
+                response['predator_analysis']['analyzed_at'] = response['predator_analysis']['analyzed_at'].isoformat()
 
         # Include bee count if available
         if 'bee_count' in image_doc:
             response['bee_count'] = image_doc['bee_count']
             # Convert analyzed_at to ISO format if present
-            if 'analyzed_at' in image_doc['bee_count']:
-                response['bee_count']['analyzed_at'] = image_doc['bee_count']['analyzed_at'].isoformat()
+            if 'analyzed_at' in response['bee_count']:
+                response['bee_count']['analyzed_at'] = response['bee_count']['analyzed_at'].isoformat()
 
         # Include honeypot analysis if available
         if 'honeypot_analysis' in image_doc:
             response['honeypot_analysis'] = image_doc['honeypot_analysis']
             # Convert analyzed_at to ISO format if present
-            if 'analyzed_at' in image_doc['honeypot_analysis']:
-                response['honeypot_analysis']['analyzed_at'] = image_doc['honeypot_analysis']['analyzed_at'].isoformat()
+            if 'analyzed_at' in response['honeypot_analysis']:
+                response['honeypot_analysis']['analyzed_at'] = response['honeypot_analysis']['analyzed_at'].isoformat()
 
         # If the client wants the actual image data, include it as base64
         include_data = request.args.get('include_data', 'false').lower() == 'true'
         if include_data and 'data' in image_doc:
             import base64
-            response['data'] = base64.b64decode(image_doc['data']).decode('utf-8')
+            response['data'] = base64.b64encode(image_doc['data']).decode('utf-8')
 
-        logger.info(f"Successfully retrieved image: {image_id}")
+        logger.info(f"Successfully retrieved image {image_id}")
         return jsonify(response), 200
 
     except Exception as e:
         logger.error(f"Failed to retrieve image: {str(e)}")
         traceback.print_exc()
         return jsonify({'error': f'Failed to retrieve image: {str(e)}'}), 500
+
 
 def monitor_sensor_heartbeat():
     logger.info("Starting sensor heartbeat monitoring task")
@@ -463,7 +464,7 @@ def monitor_sensor_heartbeat():
             try:
                 last_sensor_update = datetime.fromtimestamp(int(data_type['updated_at'].replace(tzinfo=timezone.utc).timestamp()), timezone.utc)
                 delta = datetime.now(timezone.utc) - last_sensor_update
-                logger.info(f"sensor id: {sensor['_id']}, status: {sensor['status']}, last updated {util.time_with_unit(delta.total_seconds())} ago")
+                logger.info(f"sensor id: {sensor['_id']}, status: {sensor['status']}, last updated at {last_sensor_update.isoformat()} ({util.time_with_unit(delta.total_seconds())} ago)")
                 if delta.total_seconds() > IDLE_TIME_TO_MARK_SENSOR_AS_OFFLINE and sensor['status'] == 'online':
                     logger.warning(f"Sensor {sensor['_id']} has not been updated {util.time_with_unit(delta.total_seconds())}")
                     mongo.sensors_collection.update_one({"_id": sensor['_id']}, {'$set': {'status': 'offline', 'updated_at': datetime.now(timezone.utc)}})

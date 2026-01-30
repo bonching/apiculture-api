@@ -30,7 +30,7 @@ python apiculture_api/app.py
 4. Run the simulators
 ```bash
 python -m apiculture_api.simulator.data_collection_simulator --continuous --use-hardcoded-sensor
-python -m apiculture_api.simulator.data_collection_simulator --bee-counter --data-type bee_count --sensor_id 693ae983cbd27112179d9552
+python -m apiculture_api.simulator.data_collection_simulator --bee-counter --data-type bee_count --sensor-id 693ae983cbd27112179d9552
 python -m apiculture_api.simulator.harvest_simulator
 python -m apiculture_api.simulator.defense_simulator --use-hardcoded-sensor
 ```

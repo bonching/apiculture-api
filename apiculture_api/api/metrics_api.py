@@ -83,11 +83,11 @@ def save_metrics(data):
                 hive = mongo.hives_collection.find_one({"_id": ObjectId(beehive_id)})
                 if hive:
                     beehive_name = hive.get('name', 'Unknown Hive')
-                    farm = hive.get('farm_id')
+                    farm_id = hive.get('farm_id')
 
                     # Get farm name from farm_id
                     if farm_id:
-                        farm = mongo.hives_collection.find_one({"_id": ObjectId(farm_id)})
+                        farm = mongo.farms_collection.find_one({"_id": ObjectId(farm_id)})
                         if farm:
                             farm_name = farm.get('name', 'Unknown Farm')
 
@@ -104,8 +104,8 @@ def save_metrics(data):
                 'imageId': image_id,
                 'beehiveId': beehive_id,
                 'beehiveName': beehive_name,
-                'farm_id': util.objectid_to_str(farm_id) if farm_id else None,
-                'farm_name': farm_name,
+                'farmId': util.objectid_to_str(farm_id) if farm_id else None,
+                'farmName': farm_name,
                 'dataType': "honey_harvested",
                 'alertType': "honey_harvested",
                 'sensorValue': honey_value
@@ -132,12 +132,12 @@ def get_metrics(beehive_id, data_capture):
 
         # Special handling for honey_harvested data capture
         if data_capture_snake == 'honey_harvested':
-            # For honey_harvested, we don't need sensors = query directly by data_type
+            # For honey_harvested, we don't need sensors - query directly by data_type
             data_type = mongo.data_types_collection.find_one({"data_type": data_capture_snake})
 
             # Return empty data if no data_type found
             if not data_type:
-                logger.warning(f"No data_type found for data_capture: {data_capture_snake}")
+                logger.warning(f"No data_type found for data_type: {data_capture_snake}")
                 return jsonify({'data': []}), 200
 
             data_type_id = util.objectid_to_str(data_type["_id"])
@@ -209,24 +209,24 @@ def get_metrics(beehive_id, data_capture):
                 }}
             ]
         else:
-            # For other data captures, we need to query by sensor_id
-            sensors = list(mongo.sensors_collection.find({ "beehive_id": beehive_id, "data_capture": util.camel_to_snake(data_capture)}))
+            # For other data captures, we need to find sensors first
+            sensors = list(mongo.sensors_collection.find({ "beehive_id": beehive_id, "data_capture": data_capture_snake}))
 
             # Return empty data if no sensors found
             if not sensors:
                 logger.warning(f"No sensors found for beehive_id: {beehive_id}, data_capture: {data_capture}")
                 return jsonify({'data': []}), 200
 
-            data_type = mongo.data_types_collection.find_one({"sensor_id": util.objectid_to_str(sensors[0]["_id"]), "data_type": util.camel_to_snake(data_capture)})
+            data_type = mongo.data_types_collection.find_one({"sensor_id": util.objectid_to_str(sensors[0]["_id"]), "data_type": data_capture_snake})
 
             # Return empty data if no data_type found
             if not data_type:
-                logger.warning(f"No data_type found for sensor_id: {util.objectid_to_str(sensors[0]['_id'])}, data_type: {util.camel_to_snake(data_capture)}")
+                logger.warning(f"No data_type found for sensor_id: {util.objectid_to_str(sensors[0]['_id'])}, data_type: {data_capture_snake}")
                 return jsonify({'data': []}), 200
 
             data_type_id = util.objectid_to_str(data_type["_id"])
             logger.info(f"data_type_id: {data_type_id}")
-            # Original pipline for other data captures (24-hour aggregation)
+            # Original pipeline for other data captures (24-hour aggregation)
             pipeline = [
                 # Start with a single document to generate buckets from
                 {"$limit": 1},

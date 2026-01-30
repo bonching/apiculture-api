@@ -390,8 +390,8 @@ class TestSensorsApi(unittest.TestCase):
                     'status': "offline",
                     'currentValue': "N/A",
                     'beehiveId': None,
-                    'active': True,
-                    'simulate': True,
+                    'active': False,
+                    'simulate': False,
                     'systems': ["data_collection"]
                 }
             ]),

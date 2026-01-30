@@ -20,7 +20,7 @@ class AnomalyDetector:
         value = metric['value']
         data_type_id = metric['dataTypeId']
 
-        logger.info(f"[ANOMALY CHECK] Starting anomaly check for metric: dtaTypeId={data_type_id}, value={value}")
+        logger.info(f"[ANOMALY CHECK] Starting anomaly check for metric: dataTypeId={data_type_id}, value={value}")
 
         data_type = mongo.data_types_collection.find_one({'_id': util.str_to_objectid(data_type_id)})
 
@@ -32,7 +32,7 @@ class AnomalyDetector:
         unit = data_type['unit']
         data_type_name = data_type['data_type']
 
-        logger.info(f"[ANOMALY CHECK] Data type: {data_type_name}, unit={unit}")
+        logger.info(f"[ANOMALY CHECK] Data type: {data_type_name}, unit: {unit}")
 
         # Check if anomaly_rate is 0, skip if so
         if data_type_name in DATA_COLLECTION_METRICS:
@@ -44,14 +44,14 @@ class AnomalyDetector:
         base_value = DATA_COLLECTION_METRICS[data_type_name]['base_value']
         variance = DATA_COLLECTION_METRICS[data_type_name]['variance']
 
-        logger.info(f"[ANOMALY CHECK] {data_type_name}, base_value={base_value}, variance={variance}, range=[{base_value - variance}, {base_value + variance}]")
+        logger.info(f"[ANOMALY CHECK] {data_type_name} - value={value}, base={base_value}, variance={variance}, range=[{base_value - variance}, {base_value + variance}]")
 
         if value > base_value + variance:
-            self.generate_alert_message(data_type_name, 'high', value, unit, metric, data_type)
             logger.warning(f"[ANOMALY DETECTED] {data_type_name} HIGH: {value} > {base_value + variance}")
+            self.generate_alert_message(data_type_name, 'high', value, unit, metric, data_type)
         elif value < base_value - variance:
-            self.generate_alert_message(data_type_name, 'low', value, unit, metric, data_type)
             logger.warning(f"[ANOMALY DETECTED] {data_type_name} LOW: {value} > {base_value - variance}")
+            self.generate_alert_message(data_type_name, 'low', value, unit, metric, data_type)
         else:
             logger.info(f"[ANOMALY CHECK] {data_type_name} value {value} is within normal range - NO ALERT")
 
@@ -99,7 +99,7 @@ class AnomalyDetector:
         if farm_name:
             location_context += f" ({farm_name})"
 
-        logger.info(f"[ALERT GENERATION] Location context: {location_context}")
+        logger.info(f"[ALERT GENERATION] Location context: '{location_context}'")
 
         ANOMALY_MESSAGE_TEMPLATE = {
             'temperature': {
@@ -161,7 +161,7 @@ class AnomalyDetector:
 
         logger.info(f"[ALERT GENERATION] Checking if template exists for quantifier: {quantifier}")
         if quantifier not in ANOMALY_MESSAGE_TEMPLATE[data_type]:
-            logger.warning(f"[ALERT GENERATION] No template found for quantifier: {quantifier} in data_type: {data_type} - SKIPPING ALERT")
+            logger.warning(f"[ALERT GENERATION] No template found for quantifier: {quantifier} in data_type {data_type} - SKIPPING ALERT")
             return
 
         alert = ANOMALY_MESSAGE_TEMPLATE[data_type][quantifier].copy()
@@ -172,7 +172,7 @@ class AnomalyDetector:
         alert['sensorValue'] = value
 
         if data_type == 'bee_count' and 'imageId' in metric:
-            alert['imageId'] = metric['imageId']
+            alert['imageId'] = metric.get('imageId')
 
         # Add contextual information if available
         if beehive_name:

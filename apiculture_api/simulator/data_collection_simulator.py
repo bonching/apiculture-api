@@ -45,12 +45,12 @@ class DataCollectionSimulator:
 
     def __init__(self, sensor_id=None, data_type_filter=None, use_bee_counter=False):
         """
-        Initialize the data collection simulator
+        Initialize the data collection simulator.
 
         Args:
-             sensor_id: Optional sensor ID to simulate data for (None = all sensors)
-             data_type_filter: Optional data type to simulate  (e.g., 'temperature', 'humidity')
-             use_bee_counter: If True, use actual bee counting from images for bee_count data type
+            sensor_id: Optional sensor ID to simulate data for (None = all sensors)
+            data_type_filter: Optional data type to simulate  (e.g., 'temperature', 'humidity')
+            use_bee_counter: If True, use actual bee counting from images for bee_count data type
         """
         self.sensor_id = sensor_id
         self.data_type_filter = data_type_filter
@@ -66,18 +66,18 @@ class DataCollectionSimulator:
                     logger.error(f"Sensor not found: {self.sensor_id}")
                     return
                 sensors = [sensor]
-                logger.info(f"Running simulation for sensor: {sensor.get('name', self.sensor_id)}")
+                logger.info(f'Running simulation for sensor: {sensor.get("name", self.sensor_id)}')
             except Exception as e:
                 logger.error(f"Invalid sensor ID format: {self.sensor_id}, error: {e}")
                 return
         else:
             # Run for all active sensors
-            sensors = list(mongo.sensors_collection.find({'active': True}))
+            sensors = list(mongo.sensors_collection.find({ 'active': True}))
             logger.info(f'Running simulation for {len(sensors)} active sensor(s)')
 
         for sensor in sensors:
             data_types = list(mongo.data_types_collection.find({'sensor_id': util.objectid_to_str(sensor['_id'])}))
-            logger.info(f'Found: {len(data_types)} data_type(s) for sensor {sensor.get("name", sensor["_id"])}')
+            logger.info(f'Found {len(data_types)} data type(s) for sensor {sensor.get("name", sensor["_id"])}')
 
             for data_type in data_types:
                 if data_type["data_type"] != "honey_harvested":
@@ -91,8 +91,8 @@ class DataCollectionSimulator:
         Run data collection simulation continuously.
 
         Args:
-             interval_seconds: Seconds between runs (default: DATA_COLLECTION_SIMULATION_FREQUENCY)
-             max_runs: Maximum number of runs (None = infinite)
+            interval_seconds: Seconds between runs (default: DATA_COLLECTION_SIMULATION_FREQUENCY)
+            max_runs: Maximum number of runs (None = infinite)
         """
         if interval_seconds is None:
             interval_seconds = DATA_COLLECTION_SIMULATION_FREQUENCY
@@ -105,13 +105,13 @@ class DataCollectionSimulator:
                     logger.error(f"Sensor not found: {self.sensor_id}")
                     return
                 sensors = [sensor]
-                logger.info(f"Running continuous simulation for sensor: {sensor.get('name', self.sensor_id)}")
+                logger.info(f'Running continuous simulation for sensor: {sensor.get("name", self.sensor_id)}')
             except Exception as e:
                 logger.error(f"Invalid sensor ID format: {self.sensor_id}, error: {e}")
                 return
         else:
             # Run for all active sensors
-            sensors = list(mongo.sensors_collection.find({'active': True}))
+            sensors = list(mongo.sensors_collection.find({ 'active': True}))
             logger.info(f'Running continuous simulation for {len(sensors)} active sensor(s)')
 
         tasks = []
@@ -127,7 +127,7 @@ class DataCollectionSimulator:
                     tasks.append((self.generate_random_readings, (data_type,), interval_seconds))
 
         if not tasks:
-            logger.error("No tasks to run. Check sensor configuration and filters.")
+            logger.warning("No tasks to run. Check sensor configuration and filters.")
             return
 
         runner = TaskRunner(tasks)
@@ -137,7 +137,7 @@ class DataCollectionSimulator:
             sleep_time = interval_seconds * max_runs
             logger.info(f"Running for {max_runs} iterations ({sleep_time} seconds)")
         else:
-            sleep_time = 60 * 60 * 24 # 24 hours
+            sleep_time = 60 * 60 * 24  # 24 hours
             logger.info(f"Running continuously for 24 hours")
 
         time.sleep(sleep_time)
@@ -152,7 +152,7 @@ class DataCollectionSimulator:
         logger.info(f"generating random readings for data type: {str(data_type)}")
 
         # Special handling for bee_count when --bee-counter flag is set
-        if self.use_bee_counter and data_type['data_type'] != 'bee_count':
+        if self.use_bee_counter and data_type['data_type'] == 'bee_count':
             logger.info("Using bee counter with actual image analysis")
             count, image_id = self._count_bees_from_image(data_type['sensor_id'])
             if count is not None:
@@ -169,7 +169,7 @@ class DataCollectionSimulator:
                 logger.info(response.json())
                 return
             else:
-                logger.warning("Failed to count bees from image, failing back to random generation")
+                logger.warning("Failed to count bees from image, falling back to random generation")
 
         # Standard random generation for all other cases
         base_value = DATA_COLLECTION_METRICS[data_type['data_type']]['base_value']
@@ -220,7 +220,7 @@ class DataCollectionSimulator:
             return None, None
 
         # Get all image files (jpg, jpeg, png)
-        image_patterns = ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.BMP']
+        image_patterns = ['*.jpg', '*.jpeg', '*.png', '*.JPG', '*.JPEG', '*.PNG']
         image_files = []
         for pattern in image_patterns:
             image_files.extend(glob.glob(os.path.join(bee_images_path, pattern)))
@@ -259,7 +259,7 @@ class DataCollectionSimulator:
                 logger.info(f"Image posted successfully: {response_data}")
 
                 # Extract bee count and image_id from response
-                image_id = response_data['image_id']
+                image_id = response_data['imageId']
                 if 'bee_count' in response_data and response_data['bee_count']:
                     count = response_data['bee_count'].get('count')
                     if count is not None and image_id is not None:
@@ -284,16 +284,16 @@ class DataCollectionSimulator:
 
 if __name__ == '__main__':
     """
-    Run teh data collection simulator.
+    Run the data collection simulator.
     
     Usage:
         # Run once for all sensors
         python -m apiculture_api.simulator.data_collection_simulator
         
-        # Run once for specific sensor
+        # Run once for a specific sensor
         python -m apiculture_api.simulator.data_collection_simulator --sensor-id 693b4c90943e75b9d619e11c
         
-        # Run once for specific data type
+        # Run once for a specific data type
         python -m apiculture_api.simulator.data_collection_simulator --data-type temperature
         
         # Run continuously with default interval
@@ -322,28 +322,28 @@ if __name__ == '__main__':
     parser.add_argument('--interval', type=int, default=None,
                         help=f'Seconds between simulations (default: {DATA_COLLECTION_SIMULATION_FREQUENCY})')
     parser.add_argument('--runs', type=int, default=None,
-                        help=f'Maximum number of runs (default: infinite)')
+                        help='Maximum number of runs (default: infinite)')
     parser.add_argument('--sensor-id', type=str, default=None,
-                        help='Specific sensor ID to simulate for')
+                        help='Specific sensor ID to simulate data for')
     parser.add_argument('--data-type', type=str, default=None,
                         help='Specific data type to simulate (e.g., temperature, humidity)')
     parser.add_argument('--use-hardcoded-sensor', action='store_true',
-                        hep='Use hardcoded sensor ID 693b4c90943e75b9d619e11c (for quick testing)')
+                        help='Use hardcoded sensor ID 693b4c90943e75b9d619e11a (for quick testing)')
     parser.add_argument('--bee-counter', action='store_true',
                         help='Use actual bee counting from images for bee_count data type')
 
     args = parser.parse_args()
 
-    #Use hardcoded sensor if requested (useful for IntelliJ run configurations)
+    # Use hardcoded sensor if requested (useful for IntelliJ run configurations)
     sensor_id = args.sensor_id
     if args.use_hardcoded_sensor:
-        sensor_id = '693b4c90943e75b9d619e11c'
-        logger.info("Using hardcoded sensor ID: 693b4c90943e75b9d619e11c")
+        sensor_id = '693b4c90943e75b9d619e11a'
+        logger.info("Using hardcoded sensor ID: 693b4c90943e75b9d619e11a")
 
     simulator = DataCollectionSimulator(
         sensor_id=sensor_id,
         data_type_filter=args.data_type,
-        use_bee_counter=args.bee_counter,
+        use_bee_counter=args.bee_counter
     )
 
     if args.continuous:

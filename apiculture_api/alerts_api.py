@@ -60,7 +60,7 @@ def generate_alerts(last_event_id=None):
     """
     # If reconnecting, send missed events first
     if last_event_id:
-        logger.info(f"Client reconnecting with Last-Event-Id: {last_event_id}")
+        logger.info(f"Client reconnecting with Last-Event-ID: {last_event_id}")
         try:
             # Find all alerts created after the last event ID
             last_alert = mongo.alerts_collection.find_one({"_id": ObjectId(last_event_id)})
@@ -74,9 +74,9 @@ def generate_alerts(last_event_id=None):
                 if missed_alerts:
                     logger.info(f"Sending {len(missed_alerts)} missed events to reconnecting client")
                     for alert in missed_alerts:
-                        alert_data = util.objectid_to_str(util.snake_to_camel(alert))
+                        alert_data = util.objectid_to_str(util.snake_to_camel_key(alert))
                         yield f"id: {alert_data['id']}\n"
-                        yield f"data: {json.dumps(alert_data['data'])}\n\n"
+                        yield f"data: {json.dumps(alert_data)}\n\n"
                 else:
                     logger.info("No missed events to send")
             else:
@@ -126,7 +126,7 @@ def alerts_sse_stream():
             yield "retry: 3000\n\n"
 
             # Send a connection established event
-            connection_event =  {
+            connection_event = {
                 "alertType": "connection",
                 "severity": "info",
                 "message": "SSE connection established",
@@ -141,7 +141,7 @@ def alerts_sse_stream():
         except GeneratorExit:
             logger.info(f"SSE client #{client_id} disconnected")
         except Exception as e:
-            logger.info(f"SSE client #{client_id} error: {str(e)}")
+            logger.error(f"SSE client #{client_id} error: {str(e)}")
 
     response = Response(
         stream_with_cleanup(),
@@ -152,7 +152,7 @@ def alerts_sse_stream():
     response.headers['Connection'] = 'keep-alive'
     response.headers['Access-Control-Allow-Origin'] = '*'
     response.headers['Access-Control-Expose-Headers'] = 'Last-Event-ID'
-    response.headers['X-Accel-Buffering'] = 'no' # Disable nginx buffering
+    response.headers['X-Accel-Buffering'] = 'no'  # Disable nginx buffering
 
     logger.info(f"SSE response configured for client #{client_id}")
     return response

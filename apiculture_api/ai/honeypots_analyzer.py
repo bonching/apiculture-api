@@ -16,7 +16,7 @@ logger.setLevel(logging.INFO)
 
 @dataclass
 class HoneypotDetectionResult:
-    """Result of honeypot detection analysis"""
+    """Result from honeypot detection analysis"""
     honeypots_detected: bool
     total_honeypots: int
     filled_honeypots: int
@@ -32,7 +32,7 @@ class HoneypotsAnalyzer:
     """
     Analyzes beehive images to detect and locate honeypots (honeycomb cells).
     Assumes top-down view of beehive box with camera at the top center.
-    Calculate 2D positions relative to the center of the beehive box.
+    Calculate 3D positions relative to the center of the beehive box.
     """
 
     def __init__(self, model_path: Optional[str] = None,
@@ -42,10 +42,10 @@ class HoneypotsAnalyzer:
         """
         Initialize the honeypots analyzer.
 
-        Args
+        Args:
             model_path: Optional path to ML model for honeycomb detection
             box_width_mm: Physical width of beehive box in millimeters (default: 460mm for Langstroth)
-            box_height_mm: Physical width of beehive box in millimeters (default: 370mm for Langstroth)
+            box_height_mm: Physical height of beehive box in millimeters (default: 370mm for Langstroth)
             camera_height_mm: Distance from camera to top of honeycomb in millimeters (default: 50mm)
         """
         self.model_path = model_path
@@ -62,18 +62,18 @@ class HoneypotsAnalyzer:
                 self._net = cv2.dnn.readNet(model_path)
                 logger.info(f"Loaded honeypot detection model from {model_path}")
             except Exception as e:
-                logger.warning(f"Could not load ML model: {str(e)}. Using heuristic detection")
+                logger.warning(f"Could not load ML model: {str(e)}. Using heuristic detection.")
                 self._net = None
 
     def analyze_image_bytes(self, image_bytes: bytes, content_type: Optional[str] = None) -> HoneypotDetectionResult:
         """
         Analyze image bytes to detect honeypots and their locations.
 
-        Args
+        Args:
             image_bytes: Image data as bytes
             content_type: MIME type of the image
 
-        Returns
+        Returns:
             HoneypotDetectionResult with detection details
         """
         if not image_bytes:
@@ -96,14 +96,14 @@ class HoneypotsAnalyzer:
             return self._analyze_with_heuristics(image_bytes, content_type)
 
     def _analyze_with_model(self, image_bytes: bytes, content_type: Optional[str] = None) -> HoneypotDetectionResult:
-        """Analyze using ML model (placeholder for future implementation)"""
+        """Analyze using ML model (placeholder for future implementation)."""
         logger.info("ML model analysis not yet implemented, falling back to heuristics")
         return self._analyze_with_heuristics(image_bytes, content_type)
 
     def _analyze_with_heuristics(self, image_bytes: bytes, content_type: Optional[str] = None) -> HoneypotDetectionResult:
         """
         Analyze using computer vision heuristics.
-        Detects hexagonal honeycomb patterns and determines fill status
+        Detects hexagonal honeycomb patterns and determines fill status.
         """
         try:
              # Decode image
@@ -120,7 +120,7 @@ class HoneypotsAnalyzer:
                      confidence=0.0,
                      honeypot_locations=[],
                      grid_analysis={},
-                     details={'method': 'heuristc_cv', 'reason': 'failed to decode image'}
+                     details={'method': 'heuristic_cv', 'reason': 'failed to decode image'}
                  )
 
              height, width = img.shape[:2]
@@ -160,7 +160,7 @@ class HoneypotsAnalyzer:
                  grid_analysis=grid_analysis,
                  details={
                      'method': 'heuristic_cv',
-                     'description': 'Hexagonal contour detection with HSC-based fill classification',
+                     'description': 'Hexagonal contour detection with HSV-based fill classification',
                      'image_size': f'{width}x{height}',
                      'content_type': content_type
                  }
@@ -185,21 +185,21 @@ class HoneypotsAnalyzer:
     def _detect_honeycomb_cells(self, img, gray, hsv) -> List[Dict]:
         """
         Detect individual honeycomb cells using contour detection.
-        Returns a list of cell location with coordinates.
+        Returns a list of cell locations with coordinates.
         """
         honeypot_locations = []
 
         # Apply adaptive thresholding to handle varying lighting
         thresh = cv2.adaptiveThreshold(
             gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-            cv2.THRESH_BINARY, 11, 2
+            cv2.THRESH_BINARY_INV, 11, 2
         )
 
         # Morphological operations to clean up
         kernel = np.ones((3, 3), np.uint8)
         thresh = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel, iterations=2)
 
-        # find contours
+        # Find contours
         contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
         height, width = img.shape[:2]
@@ -209,12 +209,12 @@ class HoneypotsAnalyzer:
         for idx, contour in enumerate(contours):
             area = cv2.contourArea(contour)
 
-            # Filter by area and aspect ratio
+            # Filter by area
             if area < min_area or area > max_area:
                 continue
 
             # Approximate contour to polygon
-            epsilon = 0.01 * cv2.arcLength(contour, True)
+            epsilon = 0.04 * cv2.arcLength(contour, True)
             approx = cv2.approxPolyDP(contour, epsilon, True)
 
             # Hexagons have 6 sides, but we'll accept 5-8 sides due to imperfect detection
@@ -273,15 +273,15 @@ class HoneypotsAnalyzer:
             h_mean, s_mean, v_mean = mean_hsv
 
             # Honey characteristics in HSV:
-            # - Hue: 20-3 (yello-orange-brown)
+            # - Hue: 10-30 (yellow-orange-brown)
             # - Saturation: 30-255 (colored, not gray)
             # - Value: 100-255 (bright to medium)
 
             # Capped cells (white wax):
             # - Saturation: 0-50 (low saturation, whitish)
-            # - Value: 100-255 (bright)
+            # - Value: 180-255 (bright)
 
-            # Empty cells
+            # Empty cells:
             # - Value: 0-100 (dark)
 
             is_filled = False
@@ -292,7 +292,7 @@ class HoneypotsAnalyzer:
                 is_filled = True
                 cell_type = 'honey'
             # Check for capped cells (white/light colored)
-            elif s_mean < 50 and v_mean > 100:
+            elif s_mean < 50 and v_mean > 180:
                 is_filled = True
                 cell_type = 'capped'
             # Check for medium brightness (partial fill)
@@ -302,7 +302,7 @@ class HoneypotsAnalyzer:
 
             # Add classification to cell data
             cell_classified = cell.copy()
-            cell_classified['is_filled'] = is_filled
+            cell_classified['filled'] = is_filled
             cell_classified['type'] = cell_type
             cell_classified['hsv_mean'] = {
                 'h': round(h_mean, 1),
@@ -360,15 +360,15 @@ class HoneypotsAnalyzer:
 
         return grid
 
-    def _calculate_3d_confidence(self, pixel_x: int, pixel_y: int,
-                                 image_width: int, image_height: int) -> Dict:
+    def _calculate_3d_coordinates(self, pixel_x: int, pixel_y: int,
+                                  image_width: int, image_height: int) -> Dict:
         """
         Calculate 3D coordinates (in mm) from the center of the beehive box.
 
         Coordinate system:
         - Origin (0, 0, 0) = center of beehive box at top surface
         - X-axis: horizontal (left to right when viewing from top)
-        - Y-axis: dept (top to bottom when viewing from top)
+        - Y-axis: depth (top to bottom when viewing from top)
         - Z-axis: vertical (positive upward from honeycomb surface)
 
         Camera is positioned at (0, 0, camera_height_mm) looking down.
@@ -380,7 +380,7 @@ class HoneypotsAnalyzer:
              image_height: Total image height (pixels)
 
         Returns:
-            Dictionary with 3D coordinates in mm and additional metadata
+            Dictionary with 3D coordinates in mm and additional metrics
         """
         # Calculate center of image (camera position projected onto honeycomb)
         image_center_x = image_width / 2
@@ -441,7 +441,7 @@ class HoneypotsAnalyzer:
         areas = [cell['area'] for cell in honeypot_locations]
         mean_area = np.mean(areas)
         std_area = np.std(areas)
-        cv_area = std_area / mean_area if mean_area > 0 else 1.0 # Coefficient of variation
+        cv_area = std_area / mean_area if mean_area > 0 else 1.0  # Coefficient of variation
 
         # Lower CV = more consistent = higher confidence
         size_confidence = max(0, 1 - cv_area)

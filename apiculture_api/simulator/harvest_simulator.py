@@ -48,7 +48,7 @@ class HarvestSimulator:
         sensor_id = '693b4c90943e75b9d619e139' # this sensor is not attached to any beehive (harvest sensor)
         beehive_id = '693ad7c84739d5289a1e0835'
 
-        # UPload honeypot image and capture the result
+        # Upload honeypot image and capture the result
         upload_result = self.upload_honeypots_image(sensor_id=sensor_id)
 
         # Extract imageId from upload result
@@ -65,7 +65,7 @@ class HarvestSimulator:
         })
 
         if not data_type:
-            logger.info(f"Could not find honey_harvested data type for sensor {sensor_id}")
+            logger.error(f"Could not find honey_harvested data type for sensor {sensor_id}")
             return
 
         data_type_id = util.objectid_to_str(data_type['_id'])
@@ -94,8 +94,8 @@ class HarvestSimulator:
         If image_path is empty, selects a random image from /images/honeypots folder.
 
         Args:
-             image_path: Path to the image file (empty string = select random)
-             sensor_id: Optional sensor ID
+            image_path: Path to the image file (empty string = select random)
+            sensor_id: Optional sensor ID
 
         Returns:
             Response data dict or None on failure
@@ -103,28 +103,28 @@ class HarvestSimulator:
         try:
             # If no image path provided, select random image from honeypots folder
             if not image_path or image_path == '':
-                honeypots_path = Path(__file__).parent.parent / 'images' / 'honeypots'
+                honeypots_dir = Path(__file__).parent.parent / "images" / "honeypots"
 
-                if not honeypots_path.exists():
-                    logger.error(f"Honeypots image directory not found: {honeypots_path}")
+                if not honeypots_dir.exists():
+                    logger.error(f"Honeypots images directory not found: {honeypots_dir}")
                     return None
 
                 # Get list of honeypot images
-                honeypots_images = list(honeypots_path.glob("*.jpg")) + \
-                                    list(honeypots_path.glob("*.jpeg")) + \
-                                    list(honeypots_path.glob("*.png"))
+                honeypot_images = list(honeypots_dir.glob("*.jpg")) + \
+                                  list(honeypots_dir.glob("*.jpeg")) + \
+                                  list(honeypots_dir.glob("*.png"))
 
-                if not honeypots_images:
-                    logger.error(f"No honeypots images found in: {honeypots_path}")
+                if not honeypot_images:
+                    logger.error(f"No honeypot images found in: {honeypots_dir}")
                     return None
 
                 # Select random image
-                image_path = random.choice(honeypots_images)
+                image_path = random.choice(honeypot_images)
                 logger.info(f"Randomly selected honeypot image: {image_path.name}")
             else:
                 image_path = Path(image_path)
                 if not image_path.exists():
-                    logger.error(f"Honeypot image not found: {image_path}")
+                    logger.error(f"Image file not found: {image_path}")
                     return None
 
             # Prepare the multipart form data
@@ -152,7 +152,7 @@ class HarvestSimulator:
 
                 if response.status_code == 201:
                     result = response.json()
-                    logger.error(f"Server responded with status 201 Created")
+                    logger.info(f"Server responded with status 201 Created")
                     self._log_honeypot_result(result)
                     return result
                 else:
@@ -176,23 +176,23 @@ class HarvestSimulator:
     def _log_honeypot_result(self, result):
         """Log the result of the honeypot analysis."""
         logger.info(f"\nResult:")
-        logger.info(f"  - Image ID: {result.get('inserted_id')}")
+        logger.info(f"  - Image ID: {result.get('imageId')}")
         logger.info(f"  - Filename: {result.get('filename')}")
 
-        if 'honey_analysis' in result:
-            analysis = result['honey_analysis']
-            logger.info(f"\nHoney Analysis:")
-            logger.info(f"  - Honeypots Detected: {analysis.get('honey_detected')}")
-            logger.info(f"  - Total Honeypots: {analysis.get('total_honeypots')}")
-            logger.info(f"  - Filled: {analysis.get('filled_honeypots')}")
-            logger.info(f"  - Empty: {analysis.get('empty_honeypots')}")
-            logger.info(f"  - Fill Percentage: {analysis.get('fill_percentage')}%")
-            logger.info(f"  - Confidence: {analysis.get('confidence', 0):.2%}")
+        if 'honeypot_analysis' in result:
+            analysis = result['honeypot_analysis']
+            logger.info(f"\nHoneypot Analysis:")
+            logger.info(f"    - Honeypots Detected: {analysis.get('honeypots_detected')}")
+            logger.info(f"    - Total Honeypots: {analysis.get('total_honeypots')}")
+            logger.info(f"    - Filled: {analysis.get('filled_honeypots')}")
+            logger.info(f"    - Empty: {analysis.get('empty_honeypots')}")
+            logger.info(f"    - Fill Percentage: {analysis.get('fill_percentage')}%")
+            logger.info(f"    - Confidence: {analysis.get('confidence', 0):.2f}")
 
             if 'details' in analysis:
                 details = analysis['details']
-                logger.info(f"  - Method: {details.get('method', 'unknown')}")
-                logger.info(f"  - Description: {details.get('description', 'N/A')}")
+                logger.info(f"    - Method: {details.get('method', 'unknown')}")
+                logger.info(f"    - Description: {details.get('description', 'N/A')}")
 
             # Log grid analysis summary
             if 'grid_analysis' in analysis:
@@ -201,10 +201,10 @@ class HarvestSimulator:
                 for position, data in grid.items():
                     if data.get('total', 0) > 0:
                         logger.info(f"    - {position.replace('_', ' ').title()}: "
-                                    f"{data['filled']}/{data['total']} filled"
-                                    f"({data['fill_percentage']:.%})")
+                                    f"{data['filled']}/{data['total']} filled "
+                                    f"({data['fill_percentage']:%})")
             else:
-                logger.warning(f"\n  No honeypot analysis in response")
+                logger.warning(f"  No honeypot analysis in response")
 
 if __name__ == '__main__':
     HarvestSimulator().run()
