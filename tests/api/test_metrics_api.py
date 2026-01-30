@@ -17,7 +17,7 @@ class TestMetricsApi(unittest.TestCase):
             '/api/metrics',
             data=json.dumps([
                 {
-                    'datetime': datetime.now(timezone.utc),
+                    'datetime': datetime.now(timezone.utc).isoformat(),
                     'dataTypeId': "693d6f2dd8f5aae43d541acd",
                     'value': 34.5
                 }
@@ -34,7 +34,27 @@ class TestMetricsApi(unittest.TestCase):
     def test_save_and_Get_honey_harvested_metrics(self):
         """Test saving and retrieving honey harvested metrics with data spanning past 5 years."""
         beehive_id = '693ad7c84739d5289a1e0835'  # Gamma beehive
-        data_type_id = '6966683b7aa65b884aa793b3'
+        sensor_id = '693b4c90943e75b9d619e11c'
+
+        # Derive data_type_id for this sensor and data_capture (seed DBs may or may not scope data_types by sensor_id)
+        from apiculture_api.util.mongo_client import ApicultureMongoClient
+        from apiculture_api.util.app_util import AppUtil
+        util = AppUtil()
+        mongo = ApicultureMongoClient()
+        try:
+            data_type = (
+                mongo.data_types_collection.find_one({'sensor_id': sensor_id, 'data_type': 'honey_harvested'})
+                or mongo.data_types_collection.find_one({'data_type': 'honey_harvested'})
+            )
+            self.assertIsNotNone(
+                data_type, (
+                    "No data_types record found for honey harvest; tried: "
+                    "(sensor_id + honey_harvested), (global honey_harvested)"
+                )
+            )
+            data_type_id = util.objectid_to_str(data_type['_id'])
+        finally:
+            mongo.close()
 
         # Generate dummy data for the past 5 years (60 months)
         # Create entries for each 4-month period
@@ -62,7 +82,7 @@ class TestMetricsApi(unittest.TestCase):
 
                 metrics_data.append({
                     'datetime': entry_date.isoformat(),
-                    'dataTypeId': data_type_id,
+                    'dataTypeId': sensor_id,
                     'beehiveId': beehive_id,
                     'value': value
                 })
@@ -103,11 +123,11 @@ class TestMetricsApi(unittest.TestCase):
             # Time should be in format "0mo", "4mo", "8mo", etc."
             self.assertTrue(period['time'].endswith('mo'))
 
-        # First period should be "0mo" (most recent 4 months)
-        self.assertEqual(periods[0]['time'], '0mo')
+        # API returns oldest -> newest (56mo ... 0mo)
+        self.assertEqual(periods[0]['time'], '56mo')
 
-        # Last period should be "56Mo" (56-60 months ago)
-        self.assertEqual(periods[-1]['time'], '56mo')
+        # Last period should be "0mo" (most recent 4 months)
+        self.assertEqual(periods[-1]['time'], '0mo')
 
         print(f"\n Successfully retrieved {len(periods)}  4-month periods of honey harvest data.")
         print(f"   Time range: {periods[0]['time']} - {periods[-1]['time']}")
