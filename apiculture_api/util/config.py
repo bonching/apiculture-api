@@ -1,3 +1,4 @@
+import os
 
 API_HOST = 'localhost'
 API_PORT = 8081
@@ -7,6 +8,8 @@ IOT_HARVEST_PORT = 5000
 
 IOT_DATA_COLLECTION_HOST = '192.168.68.101'
 IOT_DATA_COLLECTION_PORT = 5000
+
+SAVE_IMAGES_TO_DISK = os.environ.get('SAVE_IMAGES_TO_DISK', False)
 
 MONGODB_URL = 'mongodb://localhost:27017/?directConnection=true&serverSelectionTimeoutMS=2000&appName=apiculture'
 

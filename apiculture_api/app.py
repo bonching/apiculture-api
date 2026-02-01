@@ -13,7 +13,8 @@ from apiculture_api.api.harvest_api import harvest_api
 from apiculture_api.alerts_api import alerts_api, enqueue_sse
 
 from apiculture_api.util.app_util import AppUtil
-from apiculture_api.util.config import SENSOR_HEARTBEAT_FREQUENCY, IDLE_TIME_TO_MARK_SENSOR_AS_OFFLINE, API_PORT
+from apiculture_api.util.config import SENSOR_HEARTBEAT_FREQUENCY, IDLE_TIME_TO_MARK_SENSOR_AS_OFFLINE, API_PORT, \
+    SAVE_IMAGES_TO_DISK
 from apiculture_api.util.task_runner import TaskRunner
 
 util = AppUtil()
@@ -88,7 +89,7 @@ def receive_sensor_data():
 
     try:
         # Insert the data into MongoDB
-        result = mongo.sensor_collection.insert_one(data)
+        result = mongo.sensors_collection.insert_one(data)
         logger.info(f"Successfully saved sensor data with ID: {result.inserted_id}")
         return jsonify({'message': 'Data saved successfully', 'inserted_id': str(result.inserted_id)}), 201
     except Exception as e:
@@ -127,14 +128,15 @@ def upload_image():
         import os
         import requests
 
-        # Create images directory if it doesn't exist
-        images_dir = 'uploaded_images'
-        os.makedirs(images_dir, exist_ok=True)
+        if SAVE_IMAGES_TO_DISK:
+            # Create images directory if it doesn't exist
+            images_dir = 'uploaded_images'
+            os.makedirs(images_dir, exist_ok=True)
 
-        # Save to local disk
-        filepath = os.path.join(images_dir, image_file.filename)
-        image_file.save(filepath)
-        logger.info(f"Successfully saved image {image_file.filename} to {filepath}")
+            # Save to local disk
+            filepath = os.path.join(images_dir, image_file.filename)
+            image_file.save(filepath)
+            logger.info(f"Successfully saved image {image_file.filename} to {filepath}")
 
         # Read image as binary for MongoDB
         image_file.seek(0) # Reset file pointer after saving
