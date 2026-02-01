@@ -186,6 +186,36 @@ def update_farm(id):
         logger.error(f"Failed to update alert: {str(e)}")
         return jsonify({'error': f'Failed to update alert: {str(e)}'}), 500
 
+@alerts_api.route('/api/alerts', methods=['POST'])
+def create_alert():
+    """
+    POST endpoint to create a new alert and enqueue it to SSE stream.
+    Accepts JSON event data in request body.
+    """
+    if not request.is_json:
+        logger.warning("Request does not contain JSON data")
+        return jsonify({'error': 'Request must be JSON'}), 400
+
+    event_data = request.json
+    if not event_data:
+        logger.warning("No event data provided in JSON body")
+        return jsonify({'error': 'No event data provided'}), 400
+
+    try:
+        logger.info(f"Received alert event via POST: {event_data}")
+
+        # Enqueue the event to SSE (this will also save to database)
+        enqueue_sse(event_data)
+
+        # Return the alert ID
+        return jsonify({
+            'message': 'Alert created and enqueued successfully',
+            'id': event_data.get('id')
+        }), 201
+    except Exception as e:
+        logger.error(f"Failed to create alert: {str(e)}")
+        return jsonify({'error': f'Failed to create alert: {str(e)}'}), 500
+
 @alerts_api.route('/api/alerts', methods=['GET'])
 def get_alerts():
     try:
