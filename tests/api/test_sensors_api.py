@@ -92,12 +92,12 @@ class TestSensorsApi(unittest.TestCase):
             data=json.dumps([
                 {
                     '_id': "693b4c90943e75b9d619e110",
-                    'name': "Bosch BME280 Env Sensor",
-                    'dataCapture': ["temperature", "humidity", "co2", "barometric_pressure"],
+                    'name': "DHT22 Temp/Humidity Sensor",
+                    'dataCapture': ["temperature", "humidity"],
                     'status': "online",
-                    'currentValue': "33.8°C, 62%, 410ppm, 1013hPa",
+                    'currentValue': "35.2°C, 55%",
                     'beehiveId': "693ad7c84739d5289a1e0834",
-                    'hiveLocation': "honey_super",
+                    'hiveLocation': "external",
                     'active': True,
                     'simulate': True,
                     'systems': ["data_collection"]
@@ -143,12 +143,12 @@ class TestSensorsApi(unittest.TestCase):
             data=json.dumps([
                 {
                     '_id': "693b4c90943e75b9d619e11a",
-                    'name': "DHT22 Temp/Humidity Sensor",
-                    'dataCapture': ["temperature", "humidity"],
+                    'name': "Bosch BME280 Env Sensor",
+                    'dataCapture': ["temperature", "humidity", "barometric_pressure"],
                     'status': "online",
-                    'currentValue': "35.2°C, 55%",
+                    'currentValue': "33.8°C, 62%, 1013hPa",
                     'beehiveId': "693ad7c84739d5289a1e0835",
-                    'hiveLocation': "external",
+                    'hiveLocation': "honey_super",
                     'active': True,
                     'simulate': True,
                     'systems': ["data_collection"]
