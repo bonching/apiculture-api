@@ -109,6 +109,7 @@ def initiate_harvest(harvest_id):
             with harvest_jobs_lock:
                 if harvest_id in harvest_jobs:
                     harvest_jobs[harvest_id]['analyzing_honeypots_response'] = harvest_actions
+                    harvest_jobs[harvest_id]['image_data'] = image_data
 
             execute_harvesting(harvest_actions)
 
@@ -340,6 +341,13 @@ def initiate_harvest(harvest_id):
         def execute_completed(image_data=None):
             """State 7: completed (100%)"""
             logger.info(f"{harvest_id} Executing state: completed")
+
+            # Retrieve image_data from harvest_jobs if not passed directly
+            if image_data is None:
+                with harvest_jobs_lock:
+                    if harvest_id in harvest_jobs:
+                        image_data = harvest_jobs[harvest_id].get('image_data')
+
             with harvest_jobs_lock:
                 if harvest_id in harvest_jobs:
                     harvest_jobs[harvest_id]['state'] = 'completed'
@@ -357,13 +365,25 @@ def initiate_harvest(harvest_id):
             base_value = DATA_COLLECTION_METRICS['honey_harvested']['base_value']
             variance = DATA_COLLECTION_METRICS['honey_harvested']['variance']
             value = round(base_value + (random.random() * variance) * 10) / 10
+
+            # Retrieve beehive_id from harvest_jobs
+            beehive_id = None
+            with harvest_jobs_lock:
+                if harvest_id in harvest_jobs:
+                    beehive_id = harvest_jobs[harvest_id].get('beehive_id')
+
+            # Get image_id from image_data
+            image_id = None
+            if image_data and isinstance(image_data, dict):
+                image_id = image_data.get('id') or image_data.get('image_id')
+
             data = [
                 {
                     'datetime': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
                     'dataTypeId': HARVEST_DEVICE['data_type_id'],
-                    'beehiveId': harvest_jobs[harvest_id].get('beehive_id'),
+                    'beehiveId': beehive_id,
                     'value': value,
-                    'imageId': image_data.get('id')
+                    'imageId': image_id
                 }
             ]
             logger.info(f'Honey harvested: {str(data)}')
