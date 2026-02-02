@@ -377,10 +377,12 @@ def initiate_harvest(harvest_id):
             if image_data and isinstance(image_data, dict):
                 image_id = image_data.get('id') or image_data.get('image_id')
 
+            data_type = mongo.data_types_collection.find_one({'sensor_id': HARVEST_DEVICE['sensor_id']})
+
             data = [
                 {
                     'datetime': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
-                    'dataTypeId': HARVEST_DEVICE['data_type_id'],
+                    'dataTypeId': util.objectid_to_str(data_type['_id']),
                     'beehiveId': beehive_id,
                     'value': value,
                     'imageId': image_id

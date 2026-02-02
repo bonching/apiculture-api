@@ -55,7 +55,7 @@ DATA_COLLECTION_METRICS = {
 HARVEST_DEVICE = {
     'id': 'harvest-1',
     'name': 'Honey Extractor Pro X1',
-    'data_type_id': '694c91391738025ccfceb447'
+    'sensor_id': '693b4c90943e75b9d619e139'
 }
 
 HARVEST_ACTIONS = [
