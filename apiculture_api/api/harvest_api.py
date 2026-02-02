@@ -4,6 +4,8 @@ import traceback
 import threading
 import time
 from datetime import datetime, timezone
+
+import requests
 from bson import ObjectId
 
 from apiculture_api.api.metrics_api import save_metrics
@@ -12,7 +14,7 @@ util = AppUtil()
 
 from apiculture_api.util.iot_client import IoTClient
 from apiculture_api.util.config import IOT_SIMULATE_MODE, DATA_COLLECTION_METRICS, HARVEST_DEVICE, HARVEST_ACTIONS, \
-    IOT_DATA_COLLECTION_WEBSOCKET_URL, IOT_CONNECTION_TIMEOUT, IOT_HARVEST_WEBSOCKET_URL
+    IOT_DATA_COLLECTION_WEBSOCKET_URL, IOT_CONNECTION_TIMEOUT, IOT_HARVEST_WEBSOCKET_URL, API_HOST, API_PORT
 
 from flask import request, jsonify, Blueprint
 harvest_api = Blueprint("harvest_api", __name__)
@@ -99,16 +101,16 @@ def initiate_harvest(harvest_id):
                 if harvest_id in harvest_jobs:
                     harvest_jobs[harvest_id]['capturing_images_response'] = data
 
-            execute_analyzing_honeypots()
+            execute_analyzing_honeypots(data)
 
-        def on_analyzing_honeypots_complete(data):
+        def on_analyzing_honeypots_complete(harvest_actions, image_data):
             """Callback for analyzing_honeypots -> harvesting"""
-            logger.info(f"analyzing_honeypots completed for {harvest_id}, response: {data}")
+            logger.info(f"analyzing_honeypots completed for {harvest_id}, response: {harvest_actions}")
             with harvest_jobs_lock:
                 if harvest_id in harvest_jobs:
-                    harvest_jobs[harvest_id]['analyzing_honeypots_response'] = data
+                    harvest_jobs[harvest_id]['analyzing_honeypots_response'] = harvest_actions
 
-            execute_harvesting(data)
+            execute_harvesting(harvest_actions)
 
         def on_harvesting_complete(data):
             """Callback for harvesting -> cleanup"""
@@ -210,7 +212,7 @@ def initiate_harvest(harvest_id):
             response = iot_client_data_collection.emit_event('camera:capture', {'state': 'capturing_images'})
             logger.info(f"Emitted event with response: {response}")
 
-        def execute_analyzing_honeypots():
+        def execute_analyzing_honeypots(image_data=None):
             """State 4: analyzing_honeypots (31-32%)"""
             logger.info(f"{harvest_id} Executing state: analyzing_honeypots")
             with harvest_jobs_lock:
@@ -232,8 +234,10 @@ def initiate_harvest(harvest_id):
             iot_client_data_collection.unregister_response_callback('camera:response')
             iot_client_data_collection.close()
 
+            # TODO - construct HARVEST_ACTIONS from image_data using DRL model
+
             time.sleep(2) # do image analysis
-            on_analyzing_honeypots_complete(HARVEST_ACTIONS)
+            on_analyzing_honeypots_complete(HARVEST_ACTIONS, image_data)
 
         def execute_harvesting(harvest_actions):
             """State 5: harvesting (33-99%) - Event-driven sequential actions"""
@@ -333,7 +337,7 @@ def initiate_harvest(harvest_id):
             response = iot_client_harvest.emit_event('needle_servo:angle', {'angle': -90, 'state': 'cleanup'})
             logger.info(f"Emitted event with response: {response}")
 
-        def execute_completed():
+        def execute_completed(image_data=None):
             """State 7: completed (100%)"""
             logger.info(f"{harvest_id} Executing state: completed")
             with harvest_jobs_lock:
@@ -358,11 +362,13 @@ def initiate_harvest(harvest_id):
                     'datetime': datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
                     'dataTypeId': HARVEST_DEVICE['data_type_id'],
                     'beehiveId': harvest_jobs[harvest_id].get('beehive_id'),
-                    'value': value
+                    'value': value,
+                    'imageId': image_data.get('id')
                 }
             ]
             logger.info(f'Honey harvested: {str(data)}')
-            response = save_metrics(data)
+            # response = save_metrics(data)
+            response = requests.post(f'http://{API_HOST}:{API_PORT}/api/metrics', json=data)
             logger.info(response.json())
 
         # Start the state machine with the first state
