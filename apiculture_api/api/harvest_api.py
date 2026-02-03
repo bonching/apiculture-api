@@ -136,11 +136,10 @@ def initiate_harvest(harvest_id):
             """State 1: calibrating (0-5%)"""
             logger.info(f"{harvest_id} Executing state: calibrating")
             with harvest_jobs_lock:
-                harvest_jobs[harvest_id] = {
-                    'state': 'calibrating',
-                    'progress': 0,
-                    'start_at': datetime.now(timezone.utc).isoformat()
-                }
+                if harvest_id in harvest_jobs:
+                    harvest_jobs[harvest_id]['state'] = 'calibrating'
+                    harvest_jobs[harvest_id]['progress'] = 0
+                    harvest_jobs[harvest_id]['start_at'] = datetime.now(timezone.utc).isoformat()
 
             # Update progress (with delays only on simulation mode)
             if IOT_SIMULATE_MODE:
@@ -167,9 +166,8 @@ def initiate_harvest(harvest_id):
             """State 2: starting_smoker (6-20%)"""
             logger.info(f"{harvest_id} Executing state: starting_smoker")
             with harvest_jobs_lock:
-                harvest_jobs[harvest_id] = {
-                    'state': 'starting_smoker'
-                }
+                if harvest_id in harvest_jobs:
+                    harvest_jobs[harvest_id]['state'] = 'starting_smoker'
 
             if IOT_SIMULATE_MODE:
                 for i in range(6, 21, 1):
@@ -192,9 +190,8 @@ def initiate_harvest(harvest_id):
             """State 3: capturing_images (21-30%)"""
             logger.info(f"{harvest_id} Executing state: capturing_images")
             with harvest_jobs_lock:
-                harvest_jobs[harvest_id] = {
-                    'state': 'capturing_images'
-                }
+                if harvest_id in harvest_jobs:
+                    harvest_jobs[harvest_id]['state'] = 'capturing_images'
 
             if IOT_SIMULATE_MODE:
                 for i in range(21, 31, 1):
@@ -217,9 +214,8 @@ def initiate_harvest(harvest_id):
             """State 4: analyzing_honeypots (31-32%)"""
             logger.info(f"{harvest_id} Executing state: analyzing_honeypots")
             with harvest_jobs_lock:
-                harvest_jobs[harvest_id] = {
-                    'state': 'analyzing_honeypots'
-                }
+                if harvest_id in harvest_jobs:
+                    harvest_jobs[harvest_id]['state'] = 'analyzing_honeypots'
 
             if IOT_SIMULATE_MODE:
                 for i in range(31, 33, 1):
@@ -246,12 +242,11 @@ def initiate_harvest(harvest_id):
 
             logger.info(f"{harvest_id} Executing state: harvesting with {len(harvest_actions)} actions")
             with harvest_jobs_lock:
-                harvest_jobs[harvest_id] = {
-                    'state': 'harvesting',
-                    'progress': 33,
-                    'current_action_index': 0,
-                    'total_actions': len(harvest_actions)
-                }
+                if harvest_id not in harvest_jobs:
+                    harvest_jobs[harvest_id]['state'] = 'harvesting'
+                    harvest_jobs[harvest_id]['progress'] = 33
+                    harvest_jobs[harvest_id]['current_action_index'] = 0
+                    harvest_jobs[harvest_id]['total_actions'] = len(harvest_actions)
 
             # Track current action index
             action_state = {'current_index': 0}
@@ -347,6 +342,9 @@ def initiate_harvest(harvest_id):
                 with harvest_jobs_lock:
                     if harvest_id in harvest_jobs:
                         image_data = harvest_jobs[harvest_id].get('image_data')
+                        logger.info(f"{harvest_id} Retrieved image_data from harvest_jobs: {image_data}")
+            else:
+                logger.info(f"{harvest_id} image_data passed directly: {image_data}")
 
             with harvest_jobs_lock:
                 if harvest_id in harvest_jobs:
@@ -371,11 +369,14 @@ def initiate_harvest(harvest_id):
             with harvest_jobs_lock:
                 if harvest_id in harvest_jobs:
                     beehive_id = harvest_jobs[harvest_id].get('beehive_id')
+                    logger.info(f"{harvest_id} Retrieved beehive_id from harvest_jobs: {beehive_id}")
+                    logger.info(f"{harvest_id} Full harvest_jobs entry: {harvest_jobs[harvest_id]}")
 
             # Get image_id from image_data
             image_id = None
             if image_data and isinstance(image_data, dict):
                 image_id = image_data.get('id') or image_data.get('image_id')
+                logger.info(f"{harvest_id} Extracted image_id from image_data: {image_id}")
 
             data_type = mongo.data_types_collection.find_one({'sensor_id': HARVEST_DEVICE['sensor_id']})
 
