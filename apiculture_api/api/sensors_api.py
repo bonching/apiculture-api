@@ -136,7 +136,7 @@ def get_sensors():
                 unit = data_type['unit']
                 metrics = mongo.metrics_collection.find({"data_type_id": data_type_id}).sort("datetime", -1).limit(1)
                 for metric in metrics:
-                    latest_readings.append(f"{metric['value']}{unit}")
+                    latest_readings.append(f"{round(metric['value'], 2)}{unit}")
                     last_updated = metric['datetime'] if last_updated is None or last_updated < metric['datetime'] else last_updated
                     logger.info(f"last_updated: {last_updated}")
                     break
