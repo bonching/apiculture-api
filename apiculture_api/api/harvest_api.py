@@ -101,15 +101,14 @@ def initiate_harvest(harvest_id):
                 if harvest_id in harvest_jobs:
                     harvest_jobs[harvest_id]['capturing_images_response'] = data
 
-            execute_analyzing_honeypots(data)
+            execute_analyzing_honeypots()
 
-        def on_analyzing_honeypots_complete(harvest_actions, image_data):
+        def on_analyzing_honeypots_complete(harvest_actions):
             """Callback for analyzing_honeypots -> harvesting"""
             logger.info(f"analyzing_honeypots completed for {harvest_id}, response: {harvest_actions}")
             with harvest_jobs_lock:
                 if harvest_id in harvest_jobs:
                     harvest_jobs[harvest_id]['analyzing_honeypots_response'] = harvest_actions
-                    harvest_jobs[harvest_id]['image_data'] = image_data
 
             execute_harvesting(harvest_actions)
 
@@ -210,7 +209,7 @@ def initiate_harvest(harvest_id):
             response = iot_client_data_collection.emit_event('camera:capture', {'state': 'capturing_images'})
             logger.info(f"Emitted event with response: {response}")
 
-        def execute_analyzing_honeypots(image_data=None):
+        def execute_analyzing_honeypots():
             """State 4: analyzing_honeypots (31-32%)"""
             logger.info(f"{harvest_id} Executing state: analyzing_honeypots")
             with harvest_jobs_lock:
@@ -234,7 +233,7 @@ def initiate_harvest(harvest_id):
             # TODO - construct HARVEST_ACTIONS from image_data using DRL model
 
             time.sleep(2) # do image analysis
-            on_analyzing_honeypots_complete(HARVEST_ACTIONS, image_data)
+            on_analyzing_honeypots_complete(HARVEST_ACTIONS)
 
         def execute_harvesting(harvest_actions):
             """State 5: harvesting (33-99%) - Event-driven sequential actions"""
@@ -341,7 +340,7 @@ def initiate_harvest(harvest_id):
             if image_data is None:
                 with harvest_jobs_lock:
                     if harvest_id in harvest_jobs:
-                        image_data = harvest_jobs[harvest_id].get('image_data')
+                        image_data = harvest_jobs[harvest_id]['capturing_images_response']
                         logger.info(f"{harvest_id} Retrieved image_data from harvest_jobs: {image_data}")
             else:
                 logger.info(f"{harvest_id} image_data passed directly: {image_data}")
@@ -375,7 +374,7 @@ def initiate_harvest(harvest_id):
             # Get image_id from image_data
             image_id = None
             if image_data and isinstance(image_data, dict):
-                image_id = image_data.get('id') or image_data.get('image_id')
+                image_id = image_data.get('id') or util.objectid_to_str(image_data.get('_id'))
                 logger.info(f"{harvest_id} Extracted image_id from image_data: {image_id}")
 
             data_type = mongo.data_types_collection.find_one({'sensor_id': HARVEST_DEVICE['sensor_id']})
