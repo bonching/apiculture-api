@@ -113,7 +113,7 @@ class BeeCounter:
 
             # Method 4: Adaptive thresholding + contour detection
             # Good for high contrast bee images
-            adaptive = cv2.AdaptiveThreshold(gray_blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
+            adaptive = cv2.adaptiveThreshold(gray_blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
             adaptive_contours, _ = cv2.findContours(adaptive, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             adaptive_filtered = [c for c in adaptive_contours if min_bee_contour < cv2.contourArea(c) < max_bee_contour]
             adaptive_count = len(adaptive_filtered)
