@@ -48,39 +48,129 @@ class BeeCounter:
                 return BeeCountResult(bee_count=0, confidence=0, details={"reason": "failed to decode image"})
 
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-            gray = cv2.GaussianBlur(gray, (5, 5), 0)
+            gray_blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+            hsv = cv2.cvtColor(gray_blurred, cv2.COLOR_BGR2HSV)
 
-            # Edge map; bees tend to have high-frequency features.
-            edges = cv2.Canny(gray, 50, 150)
+            height, width, _ = img.shape[:2]
+            total_pixels = height * width
 
-            # Close gaps so we get blob-like components.
-            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-            closed = cv2.morphologyEx(edges, cv2.MORPH_CLOSE, kernel, iterations=2)
+            # Estimate image scale factor based on resolution
+            # Higher resolution images have smaller bees relative to image size
+            scale_factor = max(1, min(width, height) / 200)
 
-            # Configure blob detector. Parameters chosen to be fairly conservative.
-            params = cv2.SimpleBlobDetector_Params()
-            params.filterByArea = True
-            params.minArea = 20
-            params.maxArea = 5000
-            params.filterByCircularity = False
-            params.filterByConvexity = False
-            params.filterByInertia = False
-            params.filterByColor = True
-            params.blobColor = 255
+            # Method 1: MSER (Maximally Stable External Regions)
+            # Best for detecting individual bees even when touching
+            mser = cv2.MSER_create()
+            # Adjust area based on image size
+            min_area = int(5 * scale_factor)
+            max_area = int(500 * scale_factor * scale_factor)
+            mser.setMinArea(min_area)
+            mser.setMaxArea(max_area)
+            try:
+                regions, _ = mser.detectRegions(gray)
+                mser_count = len(regions)
+            except Exception as e:
+                mser_count = 0
 
-            detector = cv2.SimpleBlobDetector_create(params)
-            keypoints = detector.detect(closed)
+            # Method 2: Bee-colored region analysis (yellow/brown)
+            # Bees are typically yellow/brown colored
+            lower_bee1 = np.array([15, 40, 40])  # Yellow-brown
+            upper_bee1 = np.array([35, 255, 255])
+            lower_bee2 = np.array([0, 40, 40])  # Orange-brown
+            upper_bee2 = np.array([15, 255, 255])
+            lower_bee3 = np.array([35, 20, 40])  # Darker brown/golden
+            upper_bee3 = np.array([50, 255, 255])
 
-            # Clamp to sane range and compute a simple confidence heuristic.
-            count = max(0, int(len(keypoints)))
-            # Confidence rises with count up to a cap; overall heuristic.
-            confidence = float(min(0.9, 0.3 + (count / 200.0))) if count > 0 else 0.2
+            mask1 = cv2.inRange(hsv, lower_bee1, upper_bee1)
+            mask2 = cv2.inRange(hsv, lower_bee2, upper_bee2)
+            mask3 = cv2.inRange(hsv, lower_bee3, upper_bee3)
+            bee_mask = cv2.bitwise_or(cv2.bitwise_or(mask1, mask2), mask3)
+
+            # Clean up the mask
+            kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2, 2))
+            bee_mask = cv2.morphologyEx(bee_mask, cv2.MORPH_OPEN, kernel)
+            bee_mask = cv2.morphologyEx(bee_mask, cv2.MORPH_CLOSE, kernel)
+
+            # Find contours on bee-colored regions
+            contours, _ = cv2.findContours(bee_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+            # Filter contours by area (bee-sized regions)
+            min_bee_contour = int(8 * scale_factor)
+            max_bee_contour = int(800 * scale_factor * scale_factor)
+            bee_contours = [c for c in contours if min_bee_contour < cv2.contourArea(c) < max_bee_contour]
+            contour_count = len(bee_contours)
+
+            # Method 3: Converge-based estimation
+            # For densely packed images where individual detection falls
+            bee_pixel_count = np.count_nonzero(bee_mask)
+            bee_coverage = bee_pixel_count / total_pixels
+
+            # Estimate average bee size based on image resolution
+            # Small images: bees appear larger relative to image
+            # Typical bee in image: 20-60 pixels depending on resolution
+            estimated_bee_area = int(25 * scale_factor)
+            coverage_count = int(bee_pixel_count / estimated_bee_area) if estimated_bee_area > 0 else 0
+
+            # Method 4: Adaptive thresholding + contour detection
+            # Good for high contrast bee images
+            adaptive = cv2.AdaptiveThreshold(gray_blurred, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
+            adaptive_contours, _ = cv2.findContours(adaptive, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+            adaptive_filtered = [c for c in adaptive_contours if min_bee_contour < cv2.contourArea(c) < max_bee_contour]
+            adaptive_count = len(adaptive_filtered)
+
+            # Combine methods using weighted average based on confidence
+            # Higher weights to methods that typically perform better
+            counts = {
+                'mser': mser_count,
+                'contour': contour_count,
+                'coverage': coverage_count,
+                'adaptive': adaptive_count
+            }
+
+            # Determine the best estimate based on image characteristics
+            # For dense images (high edge ratio, high bee coverage), use MSER or coverage
+            edges = cv2.Canny(gray_blurred, 50, 150)
+            edge_ratio = np.count_nonzero(edges) / total_pixels
+
+            if edge_ratio > 0.15 and bee_coverage > 0.05:
+                # Dense image with many bees - MSER or coverage-based is more reliable
+                # Use median of MSER and coverage to avoid outliers
+                if mser_count > 50:
+                    # MSER found many regions - likely accurate
+                    final_count = int(mser_count * 0.7 + coverage_count * 0.03)
+                    method_used = 'mser_coverage_hybrid'
+                else:
+                    # User coverage-based as primary
+                    final_count = int(coverage_count * 0.08 + contour_count * 0.02)
+                    method_used = 'coverage_contour_hybrid'
+                confidence = min(0.85, 0.5 + bee_coverage * 2)
+            elif contour_count > 10:
+                # Moderate density - contour detection is reliable
+                final_count = int(contour_count * 0.6 + adaptive_count + 0.4)
+                method_used = 'contour_adaptive_hybrid'
+                confidence = min(0.8, 0.4 + (contour_count / 100))
+            else:
+                # Sparse image - use of maximum of available counts
+                final_count = max(contour_count, adaptive_count, min(mser_count, 50))
+                method_used = 'sparse_max'
+                confidence = 0.6 if final_count > 0 else 0.3
+
+            # Sanity check: ensure count is reasonable
+            final_count = max(0, final_count)
 
             return BeeCountResult(
-                bee_count=count,
-                confidence=confidence,
+                bee_count=final_count,
+                confidence=round(confidence, 2),
                 details={
-                    "algorithm": "opncv blob detector",
+                    "algorithm": "multi_method_hybrid",
+                    "method_used": method_used,
+                    "mser_count": mser_count,
+                    "contour_count": contour_count,
+                    "coverage_count": coverage_count,
+                    "adaptive_count": adaptive_count,
+                    "bee_coverage": round(bee_coverage, 4),
+                    "edge_ratio": round(edge_ratio, 4),
+                    "scale_factor": round(scale_factor, 2),
                     "content_type": content_type,
                     "image_shape": list(img.shape)
                 }
@@ -94,7 +184,7 @@ class BeeCounter:
                     "reason": "analysis failed",
                     "content_type": content_type,
                     "error": str(e),
-                    "hint": "Install opencv-python and provide a model_path to enable detection"
+                    "hint": "Install opencv-python to enable bee counting"
                 }
             )
 
