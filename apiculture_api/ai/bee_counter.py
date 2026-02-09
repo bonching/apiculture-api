@@ -49,16 +49,16 @@ class BeeCounter:
 
             gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
             gray_blurred = cv2.GaussianBlur(gray, (5, 5), 0)
-            hsv = cv2.cvtColor(gray_blurred, cv2.COLOR_BGR2HSV)
+            hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
 
-            height, width, _ = img.shape[:2]
+            height, width = img.shape[:2]
             total_pixels = height * width
 
             # Estimate image scale factor based on resolution
             # Higher resolution images have smaller bees relative to image size
             scale_factor = max(1, min(width, height) / 200)
 
-            # Method 1: MSER (Maximally Stable External Regions)
+            # Method 1: MSER (Maximally Stable Extremal Regions)
             # Best for detecting individual bees even when touching
             mser = cv2.MSER_create()
             # Adjust area based on image size
@@ -69,16 +69,16 @@ class BeeCounter:
             try:
                 regions, _ = mser.detectRegions(gray)
                 mser_count = len(regions)
-            except Exception as e:
+            except:
                 mser_count = 0
 
             # Method 2: Bee-colored region analysis (yellow/brown)
             # Bees are typically yellow/brown colored
-            lower_bee1 = np.array([15, 40, 40])  # Yellow-brown
+            lower_bee1 = np.array([15, 40, 40])   # Yellow-brown
             upper_bee1 = np.array([35, 255, 255])
-            lower_bee2 = np.array([0, 40, 40])  # Orange-brown
+            lower_bee2 = np.array([0, 40, 40])   # Orange-brown
             upper_bee2 = np.array([15, 255, 255])
-            lower_bee3 = np.array([35, 20, 40])  # Darker brown/golden
+            lower_bee3 = np.array([35, 20, 40])   # Darker brown/golden
             upper_bee3 = np.array([50, 255, 255])
 
             mask1 = cv2.inRange(hsv, lower_bee1, upper_bee1)
@@ -100,8 +100,8 @@ class BeeCounter:
             bee_contours = [c for c in contours if min_bee_contour < cv2.contourArea(c) < max_bee_contour]
             contour_count = len(bee_contours)
 
-            # Method 3: Converge-based estimation
-            # For densely packed images where individual detection falls
+            # Method 3: Coverage-based estimation
+            # For densely packed images where individual detection fails
             bee_pixel_count = np.count_nonzero(bee_mask)
             bee_coverage = bee_pixel_count / total_pixels
 
@@ -119,7 +119,7 @@ class BeeCounter:
             adaptive_count = len(adaptive_filtered)
 
             # Combine methods using weighted average based on confidence
-            # Higher weights to methods that typically perform better
+            # Higher weight to methods that typically perform better
             counts = {
                 'mser': mser_count,
                 'contour': contour_count,
@@ -137,22 +137,22 @@ class BeeCounter:
                 # Use median of MSER and coverage to avoid outliers
                 if mser_count > 50:
                     # MSER found many regions - likely accurate
-                    final_count = int(mser_count * 0.7 + coverage_count * 0.03)
-                    method_used = 'mser_coverage_hybrid'
+                    final_count = int(mser_count * 0.7 + coverage_count * 0.3)
+                    method_used = "mser_coverage_hybrid"
                 else:
-                    # User coverage-based as primary
-                    final_count = int(coverage_count * 0.08 + contour_count * 0.02)
-                    method_used = 'coverage_contour_hybrid'
+                    # Use coverage-based as primary
+                    final_count = int(coverage_count * 0.8 + contour_count * 0.2)
+                    method_used = "coverage_contour_hybrid"
                 confidence = min(0.85, 0.5 + bee_coverage * 2)
             elif contour_count > 10:
                 # Moderate density - contour detection is reliable
-                final_count = int(contour_count * 0.6 + adaptive_count + 0.4)
-                method_used = 'contour_adaptive_hybrid'
+                final_count = int(contour_count * 0.6 + adaptive_count * 0.4)
+                method_used = "contour_adaptive_hybrid"
                 confidence = min(0.8, 0.4 + (contour_count / 100))
             else:
-                # Sparse image - use of maximum of available counts
+                # Sparse image - use maximum of available counts
                 final_count = max(contour_count, adaptive_count, min(mser_count, 50))
-                method_used = 'sparse_max'
+                method_used = "sparse_max"
                 confidence = 0.6 if final_count > 0 else 0.3
 
             # Sanity check: ensure count is reasonable
