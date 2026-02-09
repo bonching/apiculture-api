@@ -131,7 +131,7 @@ class PredatorDetector:
             # Note: Bear and bird detection disabled to reduce false positives
             # with close-up bee images. Enable when a proper ML model is available.
             bear_score = 0.0  # self._detect_bear(img, hsv)
-            bird_score = 0.0  # self._detect_bird(img, hsv)
+            bird_score = self._detect_bird(img, hsv)
 
             # Determine the most likely predator
             max_score = max(wasp_score, bear_score, bird_score)
@@ -207,15 +207,15 @@ class PredatorDetector:
             score = 0.0
 
             # Strongly favor images with substantial warning colors AND black
-            if warning_ratio > 0.15 and black_ratio > 0.03:
+            if warning_ratio > 0.15 and black_ratio > 0.05:
                 # Good combination of warning colors and black
-                score = min(1.0, (warning_ratio * 1.8 + black_ratio * 1.5) * 0.6)
-            elif warning_ratio > 0.20 and black_ratio > 0.02:
+                score = min(1.0, (warning_ratio * 1.8 + black_ratio * 2.0) * 0.6)
+            elif warning_ratio > 0.25 and black_ratio > 0.04:
                 # Very high warning colors with some black
-                score = min(1.0, warning_ratio * 2.0)
-            elif warning_ratio > 0.12 and black_ratio > 0.05:
+                score = min(0.9, (warning_ratio * 1.5 + black_ratio * 2.5) * 0.7)
+            elif warning_ratio > 0.12 and black_ratio > 0.08:
                 # Moderate warning colors but good black presence
-                score = min(0.7, (warning_ratio + black_ratio) * 1.8)
+                score = min(0.8, (warning_ratio + black_ratio * 2.0) * 1.5)
 
             return score
         except Exception:
@@ -266,12 +266,37 @@ class PredatorDetector:
             # Check color variety (birds can be colorful)
             color_std = np.std(hsv[:, :, 0])
 
-            # Birds have VERY distinct edges and high color variation
-            # Require strong evidence to avoid false positives
-            if edge_ratio > 0.12 and color_std > 30:
-                return min(1.0, edge_ratio * 5.0)
+            # Check for yellow/tan colors (common in birds)
+            yellow_lower = np.array([20, 40, 40])
+            yellow_upper = np.array([40, 255, 255])
+            yellow_mask = cv2.inRange(hsv, yellow_lower, yellow_upper)
+            yellow_ratio = np.count_nonzero(yellow_mask) / total_pixels
 
-            return 0.0
+            # Check for brown/tan colors (feathers)
+            brown_lower = np.array([10, 30, 30])
+            brown_upper = np.array([25, 200, 200])
+            brown_mask = cv2.inRange(hsv, brown_lower, brown_upper)
+            brown_ratio = np.count_nonzero(brown_mask) / total_pixels
+
+            # Check for black (for contrast)
+            black_lower = np.array([0, 0, 0])
+            black_upper = np.array([180, 255, 70])
+            black_mask = cv2.inRange(hsv, black_lower, black_upper)
+            black_ratio = np.count_nonzero(black_mask) / total_pixels
+
+            score = 0.0
+
+            if yellow_ratio > 0.40 and brown_ratio > 0.08 and edge_ratio > 0.05 and color_std < 0.1:
+                score = min(1.0, (yellow_ratio * 0.8 + brown_ratio * 2.0 + edge_ratio * 5.0) * 0.5)
+                score = max(score, 0.5)
+
+            elif edge_ratio > 0.10 and color_std > 30:
+                score = min(1.0, edge_ratio * 5.0)
+
+            elif yellow_ratio > 0.30 and brown_ratio > 0.12 and edge_ratio > 0.06:
+                score = min(0.8, (brown_ratio * 3.0 + edge_ratio * 4.0) * 0.5)
+
+            return score
         except Exception:
             return 0.0
 

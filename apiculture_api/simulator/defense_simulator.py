@@ -1,6 +1,7 @@
 import random
 import sys
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 
 import requests
@@ -168,6 +169,65 @@ class DefenseSimulator:
                 if response.status_code == 201:
                     result = response.json()
                     logger.info(f"Server responded with status 201 Created")
+
+                    run_sprinkler = result.get('run_sprinkler', 'N')
+
+                    # If sprinkler is activated, post alert to /api/alerts
+                    if run_sprinkler == 'Y':
+                        try:
+                            predator_analysis = result.get('predator_analysis', {})
+                            predator_type = predator_analysis.get('predator', 'unknown predator')
+                            confidence = predator_analysis.get('confidence', 0)
+                            confidence_pct = int(confidence * 100)
+                            image_id = result.get('imageId')
+
+                            # Build alert event data
+                            alert_data = {
+                                "alertType": "predator_detected",
+                                "severity": "critical",
+                                "title": f"Predator detected!",
+                                "message": f"A {predator_type} has been detected with {confidence_pct}% confidence. Defense systems activated.",
+                                "imageId": image_id,
+                                "details": {
+                                    "predatorDetectionMethod": result.get('predator_analysis').get(
+                                        'details').get("description")
+                                },
+                                "timestampMs": datetime.now(timezone.utc).isoformat()
+                            }
+
+                            # Add sensor/hive/farm info if sensor_id was provided
+                            if sensor_id:
+                                # Fetch sensor info from database
+                                sensor = mongo.sensors_collection.find_one({'_id': util.str_to_objectid(sensor_id)})
+                                if sensor:
+                                    alert_data['sensorName'] = sensor.get('name', 'Unknown Sensor')
+
+                                    beehive_id = sensor.get('beehive_id')
+                                    if beehive_id:
+                                        hive = mongo.hives_collection.find_one({'_id': util.str_to_objectid(beehive_id)})
+                                        if hive:
+                                            alert_data['beehiveName'] = hive.get('name', 'Unknown Beehive')
+
+                                            farm_id = hive.get('farm_id')
+                                            if farm_id:
+                                                farm = mongo.farms_collection.find_one({'_id': util.str_to_objectid(farm_id)})
+                                                if farm:
+                                                    alert_data['farmName'] = farm.get('name', 'Unknown Farm')
+
+                            # Post to /api/alerts endpoint
+                            alerts_url = f'http://{API_HOST}:{API_PORT}/api/alerts'
+                            logger.info(f"Post alert to {alerts_url}")
+                            alert_response = requests.post(alerts_url, json=alert_data, timeout=30)
+
+                            if alert_response.status_code == 201:
+                                logger.info(f"Alert posted successfully: {alert_response.json()}")
+                            else:
+                                logger.warning(f"Error posting alert: {alert_response.text}")
+                        except Exception as e:
+                            logger.error(f"Error posting alert: {str(e)}")
+
+                        logger.info(f"Sprinkler activated for predator type: {predator_type}")
+
                     return result
                 else:
                     logger.error(f"Server responded with status {response.status_code}")
