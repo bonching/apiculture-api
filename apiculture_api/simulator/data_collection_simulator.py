@@ -43,7 +43,7 @@ logger.setLevel(logging.INFO)
 
 class DataCollectionSimulator:
 
-    def __init__(self, sensor_id=None, data_type_filter=None, use_bee_counter=False):
+    def __init__(self, sensor_id=None, data_type_filter=None, use_bee_counter=False, backfill_hours=None):
         """
         Initialize the data collection simulator.
 
@@ -51,10 +51,12 @@ class DataCollectionSimulator:
             sensor_id: Optional sensor ID to simulate data for (None = all sensors)
             data_type_filter: Optional data type to simulate (e.g., 'temperature', 'humidity')
             use_bee_counter: If True, use actual bee counting from images for bee_count data type
+            backfill_hours: If set, generate historical data for the specified number of hours (5-min interval)
         """
         self.sensor_id = sensor_id
         self.data_type_filter = data_type_filter
         self.use_bee_counter = use_bee_counter
+        self.backfill_hours = backfill_hours
 
     def run_once(self):
         """Run data collection simulation once for all configured sensors."""
@@ -84,7 +86,12 @@ class DataCollectionSimulator:
                     # Apply data type filter if specified
                     if self.data_type_filter and data_type["data_type"] != self.data_type_filter:
                         continue
-                    self.generate_random_readings(data_type)
+
+                    # If backfill is requested, generate historical data
+                    if self.backfill_hours:
+                        self.backfill_historical_data(data_type, self.backfill_hours)
+                    else:
+                        self.generate_random_readings(data_type)
 
     def run(self, interval_seconds=None, max_runs=None):
         """
@@ -203,6 +210,82 @@ class DataCollectionSimulator:
                 logger.info(f"Sensor reading {str(data_type['data_type'])} within the expected threshold: {str(data)}")
             response = requests.post(f'http://{API_HOST}:{API_PORT}/api/metrics', json=data)
             logger.info(response.json())
+
+    def backfill_historical_data(self, data_type, hours):
+        """
+        Generate historical data for the specified number of hours with 5-minute intervals.
+
+        Args:
+            data_type: Data type document for MongoDB
+            hours: Number of hours to backfill
+        """
+        from datetime import timedelta
+
+        sensor = mongo.sensors_collection.find_one({'_id': util.str_to_objectid(data_type['sensor_id'])})
+        if sensor is None or sensor['active'] is False or sensor['simulate'] is False:
+            logger.info(f"Skipping backfill for inactive sensor: {sensor.get('name', 'unknown')}")
+            return
+
+        logger.info(f"Backfill for inactive sensor: {sensor.get('name', 'unknown')}")
+
+        base_value = DATA_COLLECTION_METRICS[data_type['data_type']]['base_value']
+        variance = DATA_COLLECTION_METRICS[data_type['data_type']]['variance']
+
+        if base_value is None or variance is None:
+            logger.info(f"Skipping backfill for inactive sensor: {sensor.get('name', 'unknown')}")
+            return
+
+        # Calculate the number of 5-minute intervals
+        intervals = hours * 12  # 12 five-minute intervals per hour
+
+        # Generate data point from oldest to newest
+        now = datetime.now(timezone.utc)
+        batch_data = []
+
+        for i in range(intervals, 0, -1):
+            # Calculate timestamp for this data point
+            minutes_ago = i * 5
+            timestamp = now - timedelta(minutes=minutes_ago)
+
+            # Determine if this should be an anomaly
+            anomaly_rate = random.uniform(0.01, 100.00)
+            # has_anomaly = anomaly_rate < DATA_COLLECTION_METRICS[data_type]['anomaly_rate']
+            has_anomaly = anomaly_rate < DATA_COLLECTION_METRICS[data_type['data_type']]['anomaly_rate']
+
+            if has_anomaly:
+                # Generate anomaly
+                direction = 1 if random.random() > 0.5 else -1
+                anomaly_factor = random.uniform(1.5, 3.0)
+                value = round((base_value + (direction * anomaly_factor)) * 10) / 10
+            else:
+                # normal reading
+                seed = (random.random() - 0.5) * 2
+                value = round((base_value + (seed * anomaly_rate)) * 10) / 10
+
+            batch_data.append({
+                'timestamp': timestamp.isoformat(timespec='milliseconds'),
+                'dataTypeId': util.objectid_to_str(data_type['_id']),
+                'value': value
+            })
+
+        # send in batches to avoid overwhelming the api
+        batch_size = 100
+        total_sent = 0
+
+        for i in range(0, len(batch_data), batch_size):
+            batch = batch_data[i:i + batch_size]
+            try:
+                response = requests.post(f'http://{API_HOST}:{API_PORT}/api/metrics', json=batch)
+                if response.status_code == 201:
+                    total_sent += len(batch)
+                    logger.info(f'Backfill for sensor: {sensor.get("name", "unknown")}')
+                else:
+                    logger.info(f'Backfill for sensor: {sensor.get("name", "unknown")}')
+            except Exception as e:
+                logger.info(f'Backfill for sensor: {sensor.get("name", "unknown")}')
+
+        logger.info(f"Backfill for sensor: {sensor.get('name', 'unknown')}")
+
 
     def _count_bees_from_image(self, sensor_id):
         """
@@ -331,6 +414,8 @@ if __name__ == '__main__':
                         help='Use hardcoded sensor ID 693b4c90943e75b9d619e11a (for quick testing)')
     parser.add_argument('--bee-counter', action='store_true',
                         help='Use actual bee counting from images for bee_count data type')
+    parser.add_argument('--backfill', type=int, default=None, metavar='HOURS',
+                        help='Generate historical data for the specified number of hours (5-minute intervals). Default: 24 hours')
 
     args = parser.parse_args()
 
@@ -340,14 +425,22 @@ if __name__ == '__main__':
         sensor_id = '693b4c90943e75b9d619e11a'
         logger.info("Using hardcoded sensor ID: 693b4c90943e75b9d619e11a")
 
+    # Set default backfill to 24 hours
+    backfill_hours = args.backfill
+
     simulator = DataCollectionSimulator(
         sensor_id=sensor_id,
         data_type_filter=args.data_type,
-        use_bee_counter=args.bee_counter
+        use_bee_counter=args.bee_counter,
+        backfill_hours=backfill_hours
     )
 
     if args.continuous:
-        simulator.run(interval_seconds=args.interval, max_runs=args.runs)
+        if backfill_hours:
+            logger.warning("--backfill and --continuous are mutually exclusive")
+            simulator.run_once()
+        else:
+            simulator.run(interval_seconds=args.interval, max_runs=args.runs)
     else:
         simulator.run_once()
 

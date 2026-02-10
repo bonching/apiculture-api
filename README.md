@@ -33,6 +33,7 @@ python -m apiculture_api.simulator.data_collection_simulator --continuous --use-
 python -m apiculture_api.simulator.data_collection_simulator --bee-counter --data-type bee_count --sensor-id 693ae983cbd27112179d9552
 python -m apiculture_api.simulator.harvest_simulator
 python -m apiculture_api.simulator.defense_simulator --use-hardcoded-sensor
+python -m apiculture_api.simulator.data_collection_simulator --backfill 24
 ```
 
 ```commandline
